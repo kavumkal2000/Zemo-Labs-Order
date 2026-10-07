@@ -1,0 +1,5 @@
+backups/
+users.json
+secret.key
+*.tmp
+node_modules/

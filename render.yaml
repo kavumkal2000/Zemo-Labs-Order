@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: zemo-order-desk
+    runtime: node
+    plan: starter
+    buildCommand: ""
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: zemo-data
+      mountPath: /var/data
+      sizeGB: 1

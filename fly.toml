@@ -1,0 +1,14 @@
+app = "zemo-order-desk"
+primary_region = "mia"
+[build]
+[env]
+  PORT = "8080"
+  DATA_DIR = "/data"
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  min_machines_running = 1
+[[mounts]]
+  source = "zemo_data"
+  destination = "/data"

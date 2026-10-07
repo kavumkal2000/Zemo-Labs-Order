@@ -1,0 +1,2061 @@
+{
+ "settings": [
+  {
+   "chaseDays": 14,
+   "deductSquareFromCommission": true,
+   "packagingFallback": 0,
+   "paymentMethods": [
+    "Zelle",
+    "ACH",
+    "Square",
+    "Cash/Other"
+   ],
+   "reps": [
+    {
+     "bonusRate": 0.2,
+     "bonusThreshold": 50000,
+     "name": "Caitlyn",
+     "rate": 0.15
+    },
+    {
+     "bonusRate": null,
+     "bonusThreshold": null,
+     "name": "Laura Hart",
+     "rate": 0.15
+    }
+   ],
+   "shipping": [
+    {
+     "charge": 20,
+     "cost": 9,
+     "name": "Florida 3-Day"
+    },
+    {
+     "charge": 30,
+     "cost": 28,
+     "name": "Florida Next-Day"
+    },
+    {
+     "charge": 20,
+     "cost": 12,
+     "name": "Outside Florida 3-Day"
+    },
+    {
+     "charge": 50,
+     "cost": 35,
+     "name": "Outside Florida Next-Day"
+    },
+    {
+     "charge": 20,
+     "cost": 15,
+     "name": "California/Hawaii 3-Day"
+    },
+    {
+     "charge": 60,
+     "cost": 45,
+     "name": "California/Hawaii Next-Day"
+    },
+    {
+     "charge": 0,
+     "cost": 0,
+     "name": "Local Pickup"
+    }
+   ],
+   "squareFeePct": 0.03,
+   "id": "main"
+  }
+ ],
+ "products": [
+  {
+   "cost": 47.5,
+   "name": "Retatrutide 60mg",
+   "opening": 3,
+   "order": 0,
+   "price": 250,
+   "reorderPt": 10,
+   "tiers": [
+    250,
+    210,
+    190,
+    180,
+    170
+   ],
+   "id": "p001"
+  },
+  {
+   "cost": 31.9,
+   "name": "Retatrutide 30mg",
+   "opening": 33,
+   "order": 1,
+   "price": 210,
+   "reorderPt": 10,
+   "tiers": [
+    210,
+    190,
+    180,
+    170,
+    155
+   ],
+   "id": "p002"
+  },
+  {
+   "cost": 35,
+   "name": "Retatrutide 16mg",
+   "opening": 55,
+   "order": 2,
+   "price": 150,
+   "reorderPt": 10,
+   "tiers": [
+    150,
+    125,
+    110,
+    100,
+    90
+   ],
+   "id": "p003"
+  },
+  {
+   "cost": 9.67,
+   "name": "GHK-Cu 100mg",
+   "opening": 21,
+   "order": 3,
+   "price": 85,
+   "reorderPt": 10,
+   "tiers": [
+    85,
+    80,
+    75,
+    70,
+    65
+   ],
+   "id": "p004"
+  },
+  {
+   "cost": 14,
+   "name": "BPC-157/TB 500 10mg",
+   "opening": 12,
+   "order": 4,
+   "price": 80,
+   "reorderPt": 10,
+   "tiers": [
+    80,
+    75,
+    70,
+    65,
+    60
+   ],
+   "id": "p005"
+  },
+  {
+   "cost": 49,
+   "name": "Tesamorelin/CJC-1295/Ipamorelin 12mg Blend",
+   "opening": 23,
+   "order": 5,
+   "price": 100,
+   "reorderPt": 10,
+   "tiers": [
+    100,
+    95,
+    90,
+    85,
+    80
+   ],
+   "id": "p006"
+  },
+  {
+   "cost": 22,
+   "name": "Tesamorelin 10mg",
+   "opening": 17,
+   "order": 6,
+   "price": 85,
+   "reorderPt": 10,
+   "tiers": [
+    85,
+    80,
+    75,
+    70,
+    65
+   ],
+   "id": "p007"
+  },
+  {
+   "cost": 14,
+   "name": "CJC-1295/Ipamorelin 5mg/5mg",
+   "opening": 16,
+   "order": 7,
+   "price": 75,
+   "reorderPt": 10,
+   "tiers": [
+    75,
+    70,
+    65,
+    60,
+    50
+   ],
+   "id": "p008"
+  },
+  {
+   "cost": 44,
+   "name": "NAD+ 1000mg",
+   "opening": 8,
+   "order": 8,
+   "price": 120,
+   "reorderPt": 10,
+   "tiers": [
+    120,
+    110,
+    100,
+    90,
+    80
+   ],
+   "id": "p009"
+  },
+  {
+   "cost": 10,
+   "name": "BPC-157 10mg",
+   "opening": 33,
+   "order": 9,
+   "price": 80,
+   "reorderPt": 10,
+   "tiers": [
+    80,
+    70,
+    60,
+    50,
+    40
+   ],
+   "id": "p010"
+  },
+  {
+   "cost": 11,
+   "name": "Selank 10mg",
+   "opening": 15,
+   "order": 10,
+   "price": 75,
+   "reorderPt": 10,
+   "tiers": [
+    75,
+    70,
+    65,
+    60,
+    55
+   ],
+   "id": "p011"
+  },
+  {
+   "cost": 8.81,
+   "id": "p012",
+   "name": "BPC-157 Capsules 500mcg",
+   "opening": 1,
+   "order": 11,
+   "price": 0,
+   "reorderPt": 5,
+   "tiers": [
+    0,
+    0,
+    0,
+    null,
+    null
+   ]
+  },
+  {
+   "cost": 27,
+   "name": "Glutathione 1500mg",
+   "opening": 11,
+   "order": 12,
+   "price": 90,
+   "reorderPt": 10,
+   "tiers": [
+    90,
+    85,
+    80,
+    75,
+    70
+   ],
+   "id": "p013"
+  },
+  {
+   "cost": 9,
+   "name": "MOTS-C 10mg",
+   "opening": 5,
+   "order": 13,
+   "price": 100,
+   "reorderPt": 10,
+   "tiers": [
+    100,
+    90,
+    80,
+    70,
+    60
+   ],
+   "id": "p014"
+  },
+  {
+   "cost": 0,
+   "id": "p015",
+   "name": "BAC- 3mL",
+   "opening": 49,
+   "order": 14,
+   "price": 6,
+   "reorderPt": 50,
+   "tiers": [
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  {
+   "cost": 10.68,
+   "name": "GHK-Cu 50MG",
+   "opening": 41,
+   "order": 15,
+   "price": 60,
+   "reorderPt": 10,
+   "tiers": [
+    60,
+    65,
+    68,
+    65,
+    60
+   ],
+   "id": "p016"
+  },
+  {
+   "cost": 11.5,
+   "name": "AOD-9604 5mg",
+   "opening": 17,
+   "order": 16,
+   "price": 85,
+   "reorderPt": 10,
+   "tiers": [
+    85,
+    80,
+    75,
+    70,
+    65
+   ],
+   "id": "p017"
+  },
+  {
+   "cost": 6.6,
+   "name": "BAC- 10mL",
+   "opening": 8,
+   "order": 17,
+   "price": 10,
+   "reorderPt": 25,
+   "tiers": [
+    10,
+    10,
+    10,
+    10,
+    10
+   ],
+   "id": "p018"
+  },
+  {
+   "cost": 23,
+   "name": "MOTS-C 20mg",
+   "opening": 20,
+   "order": 18,
+   "price": 168,
+   "reorderPt": 10,
+   "tiers": [
+    168,
+    158,
+    148,
+    138,
+    128
+   ],
+   "id": "p019"
+  },
+  {
+   "cost": 25.5,
+   "name": "GLOW 70mg",
+   "opening": 16,
+   "order": 19,
+   "price": 120,
+   "reorderPt": 10,
+   "tiers": [
+    120,
+    110,
+    100,
+    95,
+    90
+   ],
+   "id": "p020"
+  },
+  {
+   "cost": 15.53,
+   "name": "Semaglutide 10mg",
+   "opening": 12,
+   "order": 20,
+   "price": 150,
+   "reorderPt": 10,
+   "tiers": [
+    150,
+    140,
+    135,
+    120,
+    110
+   ],
+   "id": "p021"
+  },
+  {
+   "cost": 26,
+   "name": "Cagrilintide 10mg",
+   "opening": 19,
+   "order": 21,
+   "price": 115,
+   "reorderPt": 10,
+   "tiers": [
+    115,
+    100,
+    90,
+    85,
+    80
+   ],
+   "id": "p022"
+  },
+  {
+   "cost": 8,
+   "name": "PT-141 10mg",
+   "opening": 9,
+   "order": 22,
+   "price": 60,
+   "reorderPt": 10,
+   "tiers": [
+    60,
+    55,
+    50,
+    45,
+    40
+   ],
+   "id": "p023"
+  },
+  {
+   "cost": 11,
+   "name": "Semax 10mg",
+   "opening": 11,
+   "order": 23,
+   "price": 75,
+   "reorderPt": 10,
+   "tiers": [
+    75,
+    70,
+    65,
+    60,
+    55
+   ],
+   "id": "p024"
+  },
+  {
+   "cost": 67,
+   "name": "Tirzepatide 20mg",
+   "opening": 8,
+   "order": 24,
+   "price": 180,
+   "reorderPt": 10,
+   "tiers": [
+    180,
+    160,
+    140,
+    120,
+    100
+   ],
+   "id": "p025"
+  },
+  {
+   "cost": 10.5,
+   "name": "KPV 10mg",
+   "opening": 10,
+   "order": 25,
+   "price": 80,
+   "reorderPt": 10,
+   "tiers": [
+    80,
+    70,
+    60,
+    50,
+    30
+   ],
+   "id": "p026"
+  },
+  {
+   "cost": 29.5,
+   "name": "KLOW 70mg",
+   "opening": 20,
+   "order": 26,
+   "price": 130,
+   "reorderPt": 10,
+   "tiers": [
+    130,
+    125,
+    120,
+    115,
+    110
+   ],
+   "id": "p027"
+  },
+  {
+   "cost": 19.5,
+   "name": "TB-500",
+   "opening": null,
+   "order": 27,
+   "price": 75,
+   "reorderPt": 10,
+   "tiers": [
+    75,
+    70,
+    65,
+    60,
+    55
+   ],
+   "id": "p028"
+  },
+  {
+   "cost": 17.86,
+   "name": "Retatrutide 10mg",
+   "opening": null,
+   "order": 28,
+   "price": 120,
+   "reorderPt": 10,
+   "tiers": [
+    120,
+    110,
+    105,
+    100,
+    95
+   ],
+   "id": "p029"
+  },
+  {
+   "cost": 0.19,
+   "name": "Syringe Pack",
+   "opening": null,
+   "order": 29,
+   "price": 4,
+   "reorderPt": 50,
+   "tiers": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "id": "p030"
+  },
+  {
+   "cost": 17.5,
+   "name": "BPC-157/TB 500 20mg",
+   "opening": null,
+   "order": 30,
+   "price": 100,
+   "reorderPt": 10,
+   "tiers": [
+    100,
+    90,
+    80,
+    70,
+    60
+   ],
+   "id": "p031"
+  },
+  {
+   "cost": 24.15,
+   "name": "Retatrutide 20mg",
+   "opening": null,
+   "order": 31,
+   "price": 180,
+   "reorderPt": 10,
+   "tiers": [
+    180,
+    170,
+    160,
+    150,
+    130
+   ],
+   "id": "p032"
+  },
+  {
+   "cost": null,
+   "name": "5-Amino-1MQ 50mg",
+   "opening": null,
+   "order": 32,
+   "price": 75,
+   "reorderPt": 10,
+   "tiers": [
+    75,
+    70,
+    65,
+    60,
+    55
+   ],
+   "id": "p033"
+  },
+  {
+   "cost": null,
+   "name": "AOD-9604 10mg",
+   "opening": null,
+   "order": 33,
+   "price": 115,
+   "reorderPt": 10,
+   "tiers": [
+    115,
+    108,
+    100,
+    85,
+    80
+   ],
+   "id": "p034"
+  },
+  {
+   "cost": null,
+   "name": "AOD-9604/CJC-1295/Ipamorelin 12mg Blend",
+   "opening": null,
+   "order": 34,
+   "price": 145,
+   "reorderPt": 10,
+   "tiers": [
+    145,
+    135,
+    125,
+    115,
+    105
+   ],
+   "id": "p035"
+  },
+  {
+   "cost": 25,
+   "name": "ARA-290 10mg",
+   "opening": null,
+   "order": 35,
+   "price": null,
+   "reorderPt": 10,
+   "tiers": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "id": "p036"
+  },
+  {
+   "cost": null,
+   "name": "ARA-290 16mg",
+   "opening": null,
+   "order": 36,
+   "price": 70,
+   "reorderPt": 10,
+   "tiers": [
+    70,
+    65,
+    60,
+    55,
+    50
+   ],
+   "id": "p037"
+  },
+  {
+   "cost": 15,
+   "name": "CJC-1295 (No DAC) 10mg",
+   "opening": null,
+   "order": 37,
+   "price": 100,
+   "reorderPt": 10,
+   "tiers": [
+    100,
+    95,
+    85,
+    80,
+    80
+   ],
+   "id": "p038"
+  },
+  {
+   "cost": 13.5,
+   "name": "DSIP 5mg",
+   "opening": null,
+   "order": 38,
+   "price": 85,
+   "reorderPt": 10,
+   "tiers": [
+    85,
+    80,
+    75,
+    70,
+    65
+   ],
+   "id": "p039"
+  },
+  {
+   "cost": 7,
+   "name": "Epitalon 25mg",
+   "opening": null,
+   "order": 39,
+   "price": 75,
+   "reorderPt": 10,
+   "tiers": [
+    75,
+    70,
+    60,
+    50,
+    40
+   ],
+   "id": "p040"
+  },
+  {
+   "cost": 74.75,
+   "name": "FOXO4-DRI 10mg",
+   "opening": null,
+   "order": 40,
+   "price": 200,
+   "reorderPt": 10,
+   "tiers": [
+    200,
+    190,
+    180,
+    160,
+    150
+   ],
+   "id": "p041"
+  },
+  {
+   "cost": 34,
+   "name": "HCG 10,000 IU",
+   "opening": null,
+   "order": 41,
+   "price": 110,
+   "reorderPt": 10,
+   "tiers": [
+    110,
+    105,
+    100,
+    90,
+    85
+   ],
+   "id": "p042"
+  },
+  {
+   "cost": 5.75,
+   "name": "HMG 75 IU",
+   "opening": null,
+   "order": 42,
+   "price": 110,
+   "reorderPt": 10,
+   "tiers": [
+    110,
+    105,
+    100,
+    90,
+    85
+   ],
+   "id": "p043"
+  },
+  {
+   "cost": 30.19,
+   "name": "IGF-1 LR3 1mg",
+   "opening": null,
+   "order": 43,
+   "price": 100,
+   "reorderPt": 10,
+   "tiers": [
+    100,
+    95,
+    90,
+    85,
+    80
+   ],
+   "id": "p044"
+  },
+  {
+   "cost": 10,
+   "name": "Ipamorelin 10mg",
+   "opening": null,
+   "order": 44,
+   "price": 75,
+   "reorderPt": 10,
+   "tiers": [
+    75,
+    70,
+    65,
+    60,
+    55
+   ],
+   "id": "p045"
+  },
+  {
+   "cost": 13.5,
+   "name": "Kisspeptin 10mg",
+   "opening": null,
+   "order": 45,
+   "price": 90,
+   "reorderPt": 10,
+   "tiers": [
+    90,
+    85,
+    80,
+    75,
+    70
+   ],
+   "id": "p046"
+  },
+  {
+   "cost": 11.21,
+   "name": "L-Carnitine 200mg",
+   "opening": null,
+   "order": 46,
+   "price": null,
+   "reorderPt": 10,
+   "tiers": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "id": "p047"
+  },
+  {
+   "cost": null,
+   "name": "L-Carnitine 5000mg",
+   "opening": null,
+   "order": 47,
+   "price": 100,
+   "reorderPt": 10,
+   "tiers": [
+    100,
+    95,
+    90,
+    80,
+    70
+   ],
+   "id": "p048"
+  },
+  {
+   "cost": 21.28,
+   "name": "Lipo-C 1050mg",
+   "opening": null,
+   "order": 48,
+   "price": 120,
+   "reorderPt": 10,
+   "tiers": [
+    120,
+    115,
+    110,
+    100,
+    95
+   ],
+   "id": "p049"
+  },
+  {
+   "cost": 21.85,
+   "name": "LL-37 5mg",
+   "opening": null,
+   "order": 49,
+   "price": 100,
+   "reorderPt": 10,
+   "tiers": [
+    100,
+    95,
+    90,
+    80,
+    70
+   ],
+   "id": "p050"
+  },
+  {
+   "cost": 9,
+   "name": "Melanotan II 10mg",
+   "opening": null,
+   "order": 50,
+   "price": 70,
+   "reorderPt": 10,
+   "tiers": [
+    70,
+    65,
+    60,
+    55,
+    50
+   ],
+   "id": "p051"
+  },
+  {
+   "cost": 21,
+   "name": "MOTS-C 40mg",
+   "opening": null,
+   "order": 51,
+   "price": 200,
+   "reorderPt": 10,
+   "tiers": [
+    200,
+    180,
+    160,
+    140,
+    120
+   ],
+   "id": "p052"
+  },
+  {
+   "cost": 10.5,
+   "name": "NAD+ 500mg",
+   "opening": null,
+   "order": 52,
+   "price": 75,
+   "reorderPt": 10,
+   "tiers": [
+    75,
+    70,
+    65,
+    60,
+    55
+   ],
+   "id": "p053"
+  },
+  {
+   "cost": 9,
+   "name": "Oxytocin 5mg",
+   "opening": null,
+   "order": 53,
+   "price": null,
+   "reorderPt": 10,
+   "tiers": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "id": "p054"
+  },
+  {
+   "cost": 23.29,
+   "name": "Oxytocin 10mg",
+   "opening": null,
+   "order": 54,
+   "price": 120,
+   "reorderPt": 10,
+   "tiers": [
+    120,
+    115,
+    110,
+    100,
+    90
+   ],
+   "id": "p055"
+  },
+  {
+   "cost": null,
+   "name": "Semaglutide 3mg",
+   "opening": null,
+   "order": 55,
+   "price": 55,
+   "reorderPt": 10,
+   "tiers": [
+    55,
+    50,
+    45,
+    37,
+    35
+   ],
+   "id": "p056"
+  },
+  {
+   "cost": 5.75,
+   "name": "Semaglutide 5mg",
+   "opening": null,
+   "order": 56,
+   "price": null,
+   "reorderPt": 10,
+   "tiers": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "id": "p057"
+  },
+  {
+   "cost": null,
+   "name": "Semaglutide 6mg",
+   "opening": null,
+   "order": 57,
+   "price": 80,
+   "reorderPt": 10,
+   "tiers": [
+    80,
+    75,
+    70,
+    60,
+    56
+   ],
+   "id": "p058"
+  },
+  {
+   "cost": 14.38,
+   "name": "Semaglutide 20mg",
+   "opening": null,
+   "order": 58,
+   "price": null,
+   "reorderPt": 10,
+   "tiers": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "id": "p059"
+  },
+  {
+   "cost": 14.38,
+   "name": "Semaglutide 30mg",
+   "opening": null,
+   "order": 59,
+   "price": null,
+   "reorderPt": 10,
+   "tiers": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "id": "p060"
+  },
+  {
+   "cost": 10,
+   "name": "Sermorelin 5mg",
+   "opening": null,
+   "order": 60,
+   "price": 65,
+   "reorderPt": 10,
+   "tiers": [
+    65,
+    60,
+    55,
+    50,
+    45
+   ],
+   "id": "p061"
+  },
+  {
+   "cost": 30.76,
+   "name": "Sermorelin 10mg",
+   "opening": null,
+   "order": 61,
+   "price": null,
+   "reorderPt": 10,
+   "tiers": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "id": "p062"
+  },
+  {
+   "cost": null,
+   "name": "Sermorelin 15mg",
+   "opening": null,
+   "order": 62,
+   "price": 120,
+   "reorderPt": 10,
+   "tiers": [
+    120,
+    115,
+    110,
+    100,
+    90
+   ],
+   "id": "p063"
+  },
+  {
+   "cost": 10.06,
+   "name": "SNAP-8 10mg",
+   "opening": null,
+   "order": 63,
+   "price": 65,
+   "reorderPt": 10,
+   "tiers": [
+    65,
+    55,
+    45,
+    35,
+    25
+   ],
+   "id": "p064"
+  },
+  {
+   "cost": 14,
+   "name": "SS-31 10mg",
+   "opening": null,
+   "order": 64,
+   "price": 70,
+   "reorderPt": 10,
+   "tiers": [
+    70,
+    65,
+    60,
+    55,
+    50
+   ],
+   "id": "p065"
+  },
+  {
+   "cost": 21,
+   "name": "Thymalin 25mg",
+   "opening": null,
+   "order": 65,
+   "price": 85,
+   "reorderPt": 10,
+   "tiers": [
+    85,
+    80,
+    70,
+    60,
+    55
+   ],
+   "id": "p066"
+  },
+  {
+   "cost": 21,
+   "name": "Thymosin Alpha-1 10mg",
+   "opening": null,
+   "order": 66,
+   "price": 112,
+   "reorderPt": 10,
+   "tiers": [
+    112,
+    107,
+    100,
+    90,
+    85
+   ],
+   "id": "p067"
+  },
+  {
+   "cost": 10.1,
+   "name": "Tirzepatide 10mg",
+   "opening": null,
+   "order": 67,
+   "price": 75,
+   "reorderPt": 10,
+   "tiers": [
+    75,
+    70,
+    65,
+    60,
+    55
+   ],
+   "id": "p068"
+  },
+  {
+   "cost": 27.17,
+   "name": "Tirzepatide 30mg",
+   "opening": null,
+   "order": 68,
+   "price": 220,
+   "reorderPt": 10,
+   "tiers": [
+    220,
+    210,
+    200,
+    190,
+    185
+   ],
+   "id": "p069"
+  },
+  {
+   "cost": null,
+   "name": "Tirzepatide 50mg",
+   "opening": null,
+   "order": 69,
+   "price": 300,
+   "reorderPt": 10,
+   "tiers": [
+    300,
+    275,
+    250,
+    225,
+    200
+   ],
+   "id": "p070"
+  },
+  {
+   "cost": 64.69,
+   "name": "Tirzepatide 100mg",
+   "opening": null,
+   "order": 70,
+   "price": 450,
+   "reorderPt": 10,
+   "tiers": [
+    450,
+    400,
+    375,
+    350,
+    300
+   ],
+   "id": "p071"
+  }
+ ],
+ "clients": [
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "VitaLuxe",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c001"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Valerie Pina",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c002"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Triunity Wellness",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c003"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "T48 Wellness",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c004"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "South Beach Wellness Center",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c005"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Rex Jones PharmD",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c006"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Priscilla Perez",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c007"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Novell Weight Loss",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c008"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Noble Wellness",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c009"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "MurgaSkin Labs",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c010"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Melissa Gibbens Aesthetics",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c011"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Hometown Medical Group",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c014"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "HL Med Spa",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c015"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Harlow Wellness & Health",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c016"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "GLo Aesthetics",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c017"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Garrett Vess",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c018"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "FIMM Health",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c019"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Elizabeth Brown RN",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c020"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Dripps IV Hydration + Wellness",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c021"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Dr. Kazmouz",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c022"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Del Aesthetics",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c023"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Collagen Project",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c024"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Coastal Medical Care",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c025"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Amason Aesthetics",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c027"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Akeem",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c028"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Aesthetic Academy",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c030"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Advanced Vitality",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c031"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "A-Senescence ACT",
+   "notes": "",
+   "phone": "",
+   "state": "",
+   "id": "c032"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Enchanted Aesthetics",
+   "notes": "",
+   "phone": "",
+   "state": "FL",
+   "id": "c033"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "Revive Primary Care & Medspa",
+   "notes": "",
+   "phone": "",
+   "state": "FL",
+   "id": "c034"
+  },
+  {
+   "contact": "",
+   "defaultShipping": "",
+   "email": "",
+   "name": "New client",
+   "notes": "",
+   "phone": "",
+   "state": "FL",
+   "id": "muxi8parkhsy7"
+  }
+ ],
+ "orders": [
+  {
+   "client": "Collagen Project",
+   "date": "2026-10-01",
+   "datePaid": "2026-10-01",
+   "feeWaived": true,
+   "id": "2610_001",
+   "lines": [
+    {
+     "costAtSale": 19.5,
+     "product": "TB-500",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 75
+    },
+    {
+     "costAtSale": 9,
+     "product": "MOTS-C 10mg",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 100
+    },
+    {
+     "costAtSale": 17.86,
+     "product": "Retatrutide 10mg",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 120
+    },
+    {
+     "costAtSale": 4,
+     "product": "BAC- 3mL",
+     "promo": 0,
+     "qty": 3,
+     "unitPrice": 5
+    }
+   ],
+   "notes": "",
+   "num": "2610-001",
+   "paid": true,
+   "payment": "Square",
+   "provider": "Provider: Heidi Cooper",
+   "rep": "Caitlyn",
+   "shipped": true,
+   "shippingCharge": 30,
+   "shippingCost": 7.11,
+   "shippingType": "Florida Next-Day",
+   "tracking": "1ZY9C3940118837812",
+   "updatedAt": "2026-10-07T02:50:55.447Z"
+  },
+  {
+   "client": "Coastal Medical Care",
+   "date": "2026-10-01",
+   "datePaid": "2026-10-01",
+   "feeWaived": true,
+   "id": "2610_002",
+   "lines": [
+    {
+     "costAtSale": 35,
+     "product": "Retatrutide 16mg",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 150
+    },
+    {
+     "costAtSale": 0.19,
+     "product": "Syringe Pack",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 4
+    },
+    {
+     "costAtSale": 0,
+     "product": "BAC- 3mL",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 5
+    }
+   ],
+   "notes": "",
+   "num": "2610-002",
+   "paid": true,
+   "payment": "Square",
+   "provider": "Patient: Felicity Weinand",
+   "rep": "Caitlyn",
+   "shipped": true,
+   "shippingCharge": 30,
+   "shippingCost": 7.11,
+   "shippingType": "Florida Next-Day",
+   "tracking": "1Z3BX9310320006616",
+   "updatedAt": "2026-10-07T02:24:57.260Z"
+  },
+  {
+   "client": "Collagen Project",
+   "date": "2026-10-02",
+   "datePaid": "2026-10-02",
+   "feeWaived": true,
+   "id": "2610_003",
+   "lines": [
+    {
+     "costAtSale": 9.67,
+     "product": "GHK-Cu 100mg",
+     "promo": 0,
+     "qty": 2,
+     "unitPrice": 85
+    },
+    {
+     "costAtSale": 27,
+     "product": "Glutathione 1500mg",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 90
+    },
+    {
+     "costAtSale": 44,
+     "product": "NAD+ 1000mg",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 120
+    },
+    {
+     "costAtSale": 0.19,
+     "product": "Syringe Pack",
+     "promo": 0,
+     "qty": 4,
+     "unitPrice": 4
+    },
+    {
+     "costAtSale": 0,
+     "product": "BAC- 3mL",
+     "promo": 0,
+     "qty": 4,
+     "unitPrice": 5
+    }
+   ],
+   "notes": "",
+   "num": "2610-003",
+   "paid": true,
+   "payment": "Square",
+   "provider": "Patient: Natalie Miller",
+   "rep": "Caitlyn",
+   "shipped": true,
+   "shippingCharge": 30,
+   "shippingCost": 7.11,
+   "shippingType": "Florida Next-Day",
+   "tracking": "",
+   "updatedAt": "2026-10-07T02:54:05.928Z"
+  },
+  {
+   "client": "Advanced Vitality",
+   "date": "2026-10-05",
+   "datePaid": "2026-10-05",
+   "feeWaived": false,
+   "id": "2610_004",
+   "lines": [
+    {
+     "costAtSale": 31.9,
+     "product": "Retatrutide 30mg",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 180
+    },
+    {
+     "costAtSale": 35,
+     "product": "Retatrutide 16mg",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 130
+    },
+    {
+     "costAtSale": 0.19,
+     "product": "Syringe Pack",
+     "promo": 0,
+     "qty": 4,
+     "unitPrice": 4
+    },
+    {
+     "costAtSale": 0,
+     "product": "BAC- 3mL",
+     "promo": 0,
+     "qty": 2,
+     "unitPrice": 4
+    }
+   ],
+   "notes": "",
+   "num": "2610-004",
+   "paid": true,
+   "payment": "Square",
+   "provider": "Patient: Javier + Cindy Herran",
+   "rep": "Caitlyn",
+   "shipped": true,
+   "shippingCharge": 30,
+   "shippingCost": 6.79,
+   "shippingType": "Florida Next-Day",
+   "tracking": "",
+   "updatedAt": "2026-10-07T02:54:40.988Z"
+  },
+  {
+   "client": "Novell Weight Loss",
+   "date": "2026-10-05",
+   "datePaid": "2026-10-05",
+   "discountAmt": 0,
+   "discountPct": 0,
+   "feeWaived": false,
+   "id": "2610_005",
+   "lines": [
+    {
+     "costAtSale": 47.5,
+     "product": "Retatrutide 60mg",
+     "promo": 10,
+     "qty": 1,
+     "unitPrice": 230
+    },
+    {
+     "costAtSale": 6.6,
+     "product": "BAC- 10mL",
+     "promo": 10,
+     "qty": 1,
+     "unitPrice": 10
+    }
+   ],
+   "notes": "",
+   "num": "2610-005",
+   "paid": true,
+   "payment": "Square",
+   "provider": "Provider: Penelope Ramos",
+   "rep": "Caitlyn",
+   "shipped": true,
+   "shippingCharge": 30,
+   "shippingCost": 7.11,
+   "shippingType": "Florida Next-Day",
+   "tracking": "",
+   "updatedAt": "2026-10-07T02:59:33.379Z"
+  },
+  {
+   "client": "Coastal Medical Care",
+   "date": "2026-10-05",
+   "datePaid": "2026-10-05",
+   "discountAmt": 0,
+   "discountPct": 0,
+   "feeWaived": false,
+   "id": "2610_006",
+   "lines": [
+    {
+     "costAtSale": 49,
+     "product": "Tesamorelin/CJC-1295/Ipamorelin 12mg Blend",
+     "promo": 0,
+     "qty": 2,
+     "unitPrice": 100
+    },
+    {
+     "costAtSale": 0.19,
+     "product": "Syringe Pack",
+     "promo": 0,
+     "qty": 4,
+     "unitPrice": 4
+    },
+    {
+     "costAtSale": 0,
+     "product": "BAC- 3mL",
+     "promo": 0,
+     "qty": 2,
+     "unitPrice": 4
+    }
+   ],
+   "notes": "",
+   "num": "2610-006",
+   "paid": true,
+   "payment": "Square",
+   "provider": "Provider: Jarica Thigpen",
+   "rep": "Caitlyn",
+   "shipped": true,
+   "shippingCharge": 30,
+   "shippingCost": 6.8,
+   "shippingType": "Florida Next-Day",
+   "tracking": "",
+   "updatedAt": "2026-10-07T02:59:56.800Z"
+  },
+  {
+   "client": "Enchanted Aesthetics",
+   "date": "2026-10-05",
+   "datePaid": "2026-10-05",
+   "discountAmt": 0,
+   "discountPct": 0,
+   "feeWaived": false,
+   "id": "2610_007",
+   "lines": [
+    {
+     "costAtSale": 29.5,
+     "product": "KLOW 70mg",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 130
+    },
+    {
+     "costAtSale": 31.9,
+     "product": "Retatrutide 30mg",
+     "promo": 0,
+     "qty": 2,
+     "unitPrice": 180
+    }
+   ],
+   "notes": "",
+   "num": "2610-007",
+   "paid": true,
+   "payment": "Square",
+   "provider": "Provider: Bridget Martin",
+   "rep": "Caitlyn",
+   "shipped": false,
+   "shippingCharge": 30,
+   "shippingCost": 28,
+   "shippingType": "Florida Next-Day",
+   "tracking": "",
+   "updatedAt": "2026-10-07T03:22:44.944Z"
+  },
+  {
+   "client": "Melissa Gibbens Aesthetics",
+   "date": "2026-10-05",
+   "datePaid": "2026-10-06",
+   "discountAmt": 0,
+   "discountPct": 0,
+   "feeWaived": false,
+   "id": "2610_008",
+   "lines": [
+    {
+     "costAtSale": 17.5,
+     "product": "BPC-157/TB 500 20mg",
+     "promo": 0,
+     "qty": 5,
+     "unitPrice": 100
+    },
+    {
+     "costAtSale": 9.67,
+     "product": "GHK-Cu 100mg",
+     "promo": 0,
+     "qty": 4,
+     "unitPrice": 85
+    },
+    {
+     "costAtSale": 11,
+     "product": "Semax 10mg",
+     "promo": 0,
+     "qty": 4,
+     "unitPrice": 90
+    },
+    {
+     "costAtSale": 49,
+     "product": "Tesamorelin/CJC-1295/Ipamorelin 12mg Blend",
+     "promo": 0,
+     "qty": 3,
+     "unitPrice": 100
+    }
+   ],
+   "notes": "",
+   "num": "2610-008",
+   "paid": true,
+   "payment": "Square",
+   "provider": "Provider: Melissa Gibbens",
+   "rep": "Caitlyn",
+   "shipped": true,
+   "shippingCharge": 45,
+   "shippingCost": 44,
+   "shippingType": "Outside Florida Next-Day",
+   "tracking": "",
+   "updatedAt": "2026-10-07T03:18:17.269Z"
+  },
+  {
+   "client": "Revive Primary Care & Medspa",
+   "date": "2026-10-05",
+   "datePaid": "2026-10-05",
+   "feeWaived": true,
+   "id": "2610_009",
+   "lines": [
+    {
+     "costAtSale": 24.15,
+     "product": "Retatrutide 20mg",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 93
+    }
+   ],
+   "notes": "",
+   "num": "2610-009",
+   "paid": true,
+   "payment": "Square",
+   "provider": "Patient : Ronald Daniel",
+   "rep": "",
+   "shipped": true,
+   "shippingCharge": 30,
+   "shippingCost": 11.4,
+   "shippingType": "Florida Next-Day",
+   "tracking": "1Z3BX9310206807057",
+   "updatedAt": "2026-10-07T02:38:51.457Z"
+  },
+  {
+   "client": "Coastal Medical Care",
+   "createdAt": "2026-10-07T03:06:52.624Z",
+   "date": "2026-10-06",
+   "datePaid": "2026-10-06",
+   "discountAmt": 0,
+   "discountPct": 0,
+   "feeWaived": false,
+   "id": "muxj0rps912vz",
+   "lines": [
+    {
+     "costAtSale": 25.5,
+     "product": "GLOW 70mg",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 120
+    },
+    {
+     "costAtSale": 0.19,
+     "product": "Syringe Pack",
+     "promo": 0,
+     "qty": 3,
+     "unitPrice": 4
+    },
+    {
+     "costAtSale": 0,
+     "product": "BAC- 3mL",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 4
+    }
+   ],
+   "notes": "",
+   "num": "2610-010",
+   "paid": true,
+   "payment": "Square",
+   "provider": "Patient Taylor Allen",
+   "rep": "Caitlyn",
+   "shipped": true,
+   "shippingCharge": 35,
+   "shippingCost": 7.11,
+   "shippingType": "Florida Next-Day",
+   "tracking": "1Z3BX9310309744082",
+   "updatedAt": "2026-10-07T03:06:52.624Z"
+  },
+  {
+   "client": "Melissa Gibbens Aesthetics",
+   "date": "2026-10-07",
+   "datePaid": "2026-10-06",
+   "discountAmt": 0,
+   "discountPct": 0,
+   "feeWaived": false,
+   "id": "muxj8zlukjk7t",
+   "lines": [
+    {
+     "costAtSale": 44,
+     "product": "NAD+ 1000mg",
+     "promo": 0,
+     "qty": 1,
+     "unitPrice": 120
+    },
+    {
+     "costAtSale": 23,
+     "product": "MOTS-C 20mg",
+     "promo": 0,
+     "qty": 2,
+     "unitPrice": 80
+    }
+   ],
+   "notes": "",
+   "num": "2610-011",
+   "paid": true,
+   "payment": "Square",
+   "provider": "Provider",
+   "rep": "Caitlyn",
+   "shipped": false,
+   "shippingCharge": 45,
+   "shippingCost": 41.25,
+   "shippingType": "Outside Florida Next-Day",
+   "tracking": "",
+   "updatedAt": "2026-10-07T03:17:41.257Z"
+  }
+ ],
+ "purchases": [],
+ "priceHistory": [
+  {
+   "changedAt": "2026-10-07T02:21:06.000Z",
+   "newCost": 3.99,
+   "newTiers": [
+    6,
+    6,
+    6,
+    6,
+    6
+   ],
+   "oldCost": 4,
+   "oldTiers": [
+    6,
+    6,
+    6,
+    6,
+    6
+   ],
+   "product": "BAC- 3mL",
+   "productId": "p015",
+   "id": "muxhdweowt6dl"
+  },
+  {
+   "changedAt": "2026-10-07T02:21:09.532Z",
+   "newCost": 0,
+   "newTiers": [
+    6,
+    6,
+    6,
+    6,
+    6
+   ],
+   "oldCost": 3.99,
+   "oldTiers": [
+    6,
+    6,
+    6,
+    6,
+    6
+   ],
+   "product": "BAC- 3mL",
+   "productId": "p015",
+   "id": "muxhdz4s96f9i"
+  },
+  {
+   "changedAt": "2026-10-07T02:24:00.000Z",
+   "newCost": 0.19,
+   "newTiers": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "note": "Jeff: $18.99 buys 100 packs",
+   "oldCost": 1.899,
+   "oldTiers": null,
+   "product": "Syringe Pack",
+   "productId": "p030",
+   "id": "ph_syringe_20261006"
+  }
+ ],
+ "payouts": [],
+ "closes": []
+}

@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0}[hidden]{display:none!important}</style></head><body>
+<title>Zemo Labs Order Desk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a fixed top bar with tabs; each tab is a work surface — summary first, then the table. Numbers live in mono; pharmacy-ledger feel, cool slate neutrals, one teal-ink accent. */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --surface-2:#e9edf1; --line:#d3dae1; --fg:#15202b; --muted:#5b6b7a;
+  --accent:#0f6b6e; --accent-fg:#ffffff; --accent-soft:#d9eeee;
+  --good:#1f7a3d; --good-soft:#dcf1e2; --warn:#9a5b00; --warn-soft:#fbead0; --bad:#b3261e; --bad-soft:#f9dedb;
+  --input:#ffffff; --yellow:#fff6c7;
+  --display:"Archivo",system-ui,sans-serif; --body:"Source Sans 3",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1519; --surface:#171f26; --surface-2:#1f2a32; --line:#2b3842; --fg:#e6ecf0; --muted:#93a3b1;
+  --accent:#4fb3b4; --accent-fg:#06282a; --accent-soft:#143a3b;
+  --good:#5fcf82; --good-soft:#15331f; --warn:#f0b35a; --warn-soft:#3a2a10; --bad:#f08a82; --bad-soft:#3e1a17;
+  --input:#121a20; --yellow:#3a3514; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f1519; --surface:#171f26; --surface-2:#1f2a32; --line:#2b3842; --fg:#e6ecf0; --muted:#93a3b1;
+  --accent:#4fb3b4; --accent-fg:#06282a; --accent-soft:#143a3b;
+  --good:#5fcf82; --good-soft:#15331f; --warn:#f0b35a; --warn-soft:#3a2a10; --bad:#f08a82; --bad-soft:#3e1a17;
+  --input:#121a20; --yellow:#3a3514; color-scheme:dark }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 var(--body)}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:1.15rem;font-weight:600}
+h3{font-size:.95rem;font-weight:600}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.92em}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;gap:16px;padding:10px 16px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand h1{font-size:1.1rem;font-weight:700}
+.brand .sub{color:var(--muted);font-size:.85rem}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.tab{border:0;background:transparent;padding:8px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600}
+.tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+.tab:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.status{font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.dot.on{background:var(--good)}
+main{max-width:1280px;margin:0 auto;padding-block:20px 48px;padding-inline:16px}
+.panel{display:none}.panel.active{display:block}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi .l{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kpi .v{font-family:var(--mono);font-size:1.35rem;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .v.good{color:var(--good)}.kpi .v.bad{color:var(--bad)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.two{grid-template-columns:1fr 1fr}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;white-space:nowrap}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;background:var(--surface)}
+td.r,th.r{text-align:right}
+td .num{font-size:.9em}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:var(--surface-2)}
+tfoot td{font-weight:600;border-top:2px solid var(--line)}
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:600;letter-spacing:.03em}
+.chip.good{background:var(--good-soft);color:var(--good)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.neutral{background:var(--surface-2);color:var(--muted)}
+label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:3px;font-weight:600}
+input,select,textarea{width:100%;background:var(--input);border:1px solid var(--line);border-radius:7px;padding:7px 9px;min-width:0}
+input[type=checkbox]{width:auto}
+input.edit{background:var(--yellow)}
+.field{min-width:0}
+.form-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.lines th,.lines td{padding:5px 6px}
+.lines input,.lines select{padding:5px 7px}
+.lines .qty{width:64px}.lines .price{width:92px}.lines .promo{width:70px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.sm{padding:4px 9px;font-size:.82rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.totals{display:grid;grid-template-columns:1fr auto;gap:4px 18px;font-size:.92rem}
+.totals .k{color:var(--muted)}
+.totals .big{font-size:1.1rem;font-weight:600}
+.empty{color:var(--muted);padding:18px;text-align:center;border:1px dashed var(--line);border-radius:10px}
+.note{font-size:.82rem;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.show{opacity:1}
+.confirm{display:inline-flex;gap:6px;align-items:center}
+.monthpick{display:flex;gap:8px;align-items:center}
+.monthpick select{width:auto}
+.ro{opacity:.55;pointer-events:none}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:.78rem}
+.cal .d{background:var(--surface-2);border-radius:6px;padding:6px;min-height:46px}
+.cal .d .dn{color:var(--muted)}
+.cal .d .dv{font-family:var(--mono);font-weight:600}
+.cal .hd{text-align:center;color:var(--muted);font-size:.7rem;text-transform:uppercase}
+.sr{position:absolute;left:-9999px}
+@media (prefers-reduced-motion: reduce){.toast{transition:none}}
+.report h2{font-size:1.3rem}
+.report .sec{margin-top:18px}
+.report table{font-size:.85rem}
+.banner{background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:10px 14px;font-weight:600;margin-bottom:12px}
+body.repmode .tabs, body.repmode .panel{display:none}
+body.repmode #panel-repview{display:block}
+.copybtn{white-space:nowrap}
+</style>
+
+<header class="top"><div class="top-in">
+  <div class="brand"><h1>Zemo Labs Order Desk</h1><span class="sub">Sales · Inventory · Commission</span></div>
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-tab="dash" aria-selected="true">Dashboard</button>
+    <button class="tab" role="tab" data-tab="new">New Order</button>
+    <button class="tab" role="tab" data-tab="orders">Orders</button>
+    <button class="tab" role="tab" data-tab="inv">Inventory</button>
+    <button class="tab" role="tab" data-tab="purch">Purchases</button>
+    <button class="tab" role="tab" data-tab="recv">Receivables</button>
+    <button class="tab" role="tab" data-tab="payouts">Rep Payouts</button>
+    <button class="tab" role="tab" data-tab="close">Month Close</button>
+    <button class="tab" role="tab" data-tab="settings">Catalog &amp; Settings</button>
+  </nav>
+  <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting…</span><span id="acct" hidden> · <a id="acctUsers" href="/users" hidden>Users</a> <a href="/logout">Sign out</a></span></div>
+</div></header>
+
+<main>
+<!-- DASHBOARD -->
+<section class="panel active" id="panel-dash">
+  <div class="card-h">
+    <h2>Month overview</h2><span class="note" id="basisNote"></span>
+    <div class="monthpick"><label for="dashMonth" class="sr">Month</label><select id="dashMonth"></select></div>
+  </div>
+  <div class="grid kpis" id="kpis"></div>
+  <div class="grid two" style="margin-top:14px">
+    <div class="card"><div class="card-h"><h3>Commission by rep</h3><span class="note" id="commRule"></span></div><div class="tbl" id="repTable"></div></div>
+    <div class="card"><div class="card-h"><h3>Revenue by day</h3></div><div class="cal" id="cal"></div></div>
+    <div class="card"><div class="card-h"><h3>Sales by client</h3></div><div class="tbl" id="clientTable"></div></div>
+    <div class="card"><div class="card-h"><h3>Reorder list</h3><span class="note">closing ≤ reorder point</span></div><div class="tbl" id="reorderTable"></div></div>
+    <div class="card" style="grid-column:1/-1"><div class="card-h"><h3>Product profitability</h3><span class="note">products sold this month</span></div><div class="tbl" id="prodTable"></div></div>
+  </div>
+</section>
+
+<!-- NEW / EDIT ORDER -->
+<section class="panel" id="panel-new">
+  <div class="card-h"><h2 id="orderFormTitle">New order</h2><span class="note" id="orderNumPreview"></span></div>
+  <div class="grid two">
+    <div class="card">
+      <div class="form-grid">
+        <div class="field"><label for="oDate">Date</label><input type="date" id="oDate" class="edit"></div>
+        <div class="field"><label for="oClient">Clinic / client</label><input id="oClient" class="edit" list="clientList" placeholder="Start typing…"><datalist id="clientList"></datalist></div>
+        <div class="field"><label for="oProvider">Patient or provider</label><input id="oProvider" class="edit" placeholder="Provider: …"></div>
+        <div class="field"><label for="oRep">Sales rep</label><select id="oRep" class="edit"></select></div>
+        <div class="field"><label for="oShipType">Shipping type</label><select id="oShipType" class="edit"></select></div>
+        <div class="field"><label for="oShipCharge">Shipping charged ($)</label><input type="number" step="0.01" id="oShipCharge" class="edit"></div>
+        <div class="field"><label for="oShipCost">Actual carrier cost ($)</label><input type="number" step="0.01" id="oShipCost" class="edit" placeholder="blank = table estimate"></div>
+        <div class="field"><label for="oDiscAmt">Order discount ($)</label><input type="number" step="0.01" min="0" id="oDiscAmt" class="edit" placeholder="0.00"></div>
+        <div class="field"><label for="oDiscPct">Order discount (%)</label><input type="number" step="0.5" min="0" max="100" id="oDiscPct" class="edit" placeholder="0"></div>
+        <div class="field"><label for="oPayment">Payment method</label><select id="oPayment" class="edit"></select></div>
+        <div class="field"><label for="oTracking">Tracking #</label><input id="oTracking" class="edit"></div>
+        <div class="field"><label for="oDatePaid">Date paid</label><input type="date" id="oDatePaid" class="edit"></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <label style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" id="oShipped"> Shipped</label>
+        <label style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" id="oPaid"> Paid</label>
+        <label style="display:flex;gap:6px;align-items:center;margin:0" title="Tick if the card fee was not added to this invoice"><input type="checkbox" id="oFeeWaived"> Card fee not charged</label>
+      </div>
+      <div class="field" style="margin-top:12px"><label for="oNotes">Notes</label><textarea id="oNotes" rows="2" class="edit"></textarea></div>
+    </div>
+    <div class="card">
+      <h3>Order totals</h3>
+      <div class="totals" id="orderTotals" style="margin-top:8px"></div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn primary" id="saveOrder">Save order</button>
+        <button class="btn" id="resetOrder">Clear</button>
+        <span class="note" id="saveMsg"></span>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-h"><h3>Products on this order</h3><button class="btn sm" id="addLine">+ Add line</button></div>
+    <div class="tbl lines"><table><thead><tr><th>Product</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Promo % off</th><th class="r">Line total</th><th class="r">Unit cost</th><th></th></tr></thead><tbody id="lineRows"></tbody></table></div>
+    <p class="note">Commission shown here is the base rate; any monthly tier bonus appears on the Dashboard once the threshold is hit. Unit price auto-fills from the tier for that quantity (1–9 / 10–19 / 20–49 / 50–99 / 100+). Type over it if you charged something different.</p>
+  </div>
+</section>
+
+<!-- ORDERS -->
+<section class="panel" id="panel-orders">
+  <div class="card-h">
+    <h2>Orders</h2>
+    <div class="row">
+      <select id="ordersMonth" style="width:auto"></select>
+      <select id="ordersFilter" style="width:auto"><option value="all">All</option><option value="unpaid">Unpaid</option><option value="unshipped">Unshipped</option></select>
+      <input id="ordersSearch" placeholder="Search client / product / order #" style="width:240px">
+      <button class="btn" id="exportOrders">Export CSV</button>
+    </div>
+  </div>
+  <div class="grid kpis" id="ordersKpis" style="margin-bottom:14px"></div>
+  <div class="card"><div class="tbl" id="ordersTable"></div></div>
+</section>
+
+<!-- INVENTORY -->
+<section class="panel" id="panel-inv">
+  <div class="card-h"><h2>Inventory</h2><span class="note">Closing = Opening count − Sold (all orders) + Restocked (Purchases). Click an opening count to correct it.</span></div>
+  <div class="grid kpis" id="invKpis" style="margin-bottom:14px"></div>
+  <div class="card"><div class="tbl" id="invTable"></div></div>
+</section>
+
+<!-- PURCHASES -->
+<section class="panel" id="panel-purch">
+  <div class="card-h"><h2>Purchases &amp; restock log</h2></div>
+  <div class="card">
+    <div class="form-grid">
+      <div class="field"><label for="pDate">Date</label><input type="date" id="pDate" class="edit"></div>
+      <div class="field"><label for="pCat">Category</label><select id="pCat" class="edit"><option>Product</option><option>Supplies</option><option>Shipping</option><option>Other</option></select></div>
+      <div class="field"><label for="pProduct">Product (for restock)</label><select id="pProduct" class="edit"></select></div>
+      <div class="field"><label for="pQty">Units</label><input type="number" step="1" id="pQty" class="edit"></div>
+      <div class="field"><label for="pUnit">Cost per unit ($)</label><input type="number" step="0.01" id="pUnit" class="edit"></div>
+      <div class="field"><label for="pTotal">Total paid ($)</label><input type="number" step="0.01" id="pTotal" class="edit"></div>
+      <div class="field"><label for="pVendor">Vendor</label><input id="pVendor" class="edit" placeholder="Mike / Jason / Mateo / Uline…"></div>
+      <div class="field"><label for="pNotes">Notes</label><input id="pNotes" class="edit"></div>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="savePurchase">Log purchase</button><span class="note">Product rows restock inventory and update that product's weighted-average unit cost. Supplies rows feed packaging cost per shipment.</span></div>
+  </div>
+  <div class="card" style="margin-top:14px"><div class="tbl" id="purchTable"></div></div>
+</section>
+
+<!-- RECEIVABLES -->
+<section class="panel" id="panel-recv">
+  <div class="card-h"><h2>Receivables chase list</h2>
+    <div class="row"><label for="chaseDays" style="margin:0">Flag unpaid after</label><input type="number" id="chaseDays" min="0" step="1" style="width:70px" class="edit"><span class="note">days</span></div></div>
+  <div class="grid kpis" id="recvKpis" style="margin-bottom:14px"></div>
+  <div class="card"><div class="tbl" id="recvTable"></div><p class="note" style="margin-top:8px">"Copy reminder" puts a ready-to-send text on your clipboard. Contact details come from the Client directory; add them there and they appear here.</p></div>
+  <div class="card" style="margin-top:14px"><div class="card-h"><h3>All open invoices</h3></div><div class="tbl" id="recvAllTable"></div></div>
+</section>
+
+<!-- WEEKLY REP PAYOUTS -->
+<section class="panel" id="panel-payouts">
+  <div class="card-h"><h2>Rep payouts — weekly</h2><div class="row"><select id="payWeek" style="width:auto"></select><span class="note">Paid every Monday for the prior Mon–Sun, on the date the client paid.</span></div></div>
+  <div class="grid kpis" id="payKpis" style="margin-bottom:14px"></div>
+  <div id="payBody" class="report"></div>
+  <div class="card" style="margin-top:14px"><div class="card-h"><h3>Payout history</h3></div><div class="tbl" id="payHistory"></div></div>
+</section>
+
+<!-- MONTH CLOSE -->
+<section class="panel" id="panel-close">
+  <div class="card-h"><h2>Month close</h2>
+    <div class="row"><select id="closeMonth" style="width:auto"></select><button class="btn" id="exportClose">Export close report (CSV)</button><button class="btn primary" id="lockMonth">Lock month</button></div></div>
+  <div id="closeBanner"></div>
+  <div class="report" id="closeReport"></div>
+</section>
+
+<!-- REP VIEW (opens when the link ends in #rep-<name>) -->
+<section class="panel" id="panel-repview">
+  <div class="card-h"><h2 id="repviewTitle">Rep statement</h2><div class="row"><select id="repviewMonth" style="width:auto"></select><button class="btn" id="repviewExport">Export CSV</button></div></div>
+  <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>This week's payout</h3><select id="repviewWeek" style="width:auto"></select></div><div id="repviewWeekBody"></div></div>
+  <div class="report" id="repviewBody"></div>
+</section>
+
+<!-- SETTINGS -->
+<section class="panel" id="panel-settings">
+  <div class="grid two">
+    <div class="card">
+      <h3>Fees &amp; commission</h3>
+      <div class="form-grid" style="margin-top:10px">
+        <div class="field"><label for="sSquare">Card processing fee % (added to product + shipping on Square orders, passed through to Square)</label><input type="number" step="0.1" id="sSquare" class="edit"></div>
+        <div class="field"><label for="sPack">Packaging fallback ($/shipment)</label><input type="number" step="0.01" id="sPack" class="edit"></div>
+        <div class="field"><label for="sBasis">Revenue counts on</label><select id="sBasis" class="edit"><option value="paid">Date paid (cash basis)</option><option value="order">Order date</option></select></div>
+        <div class="field"><label for="sDeduct">Commission base</label><select id="sDeduct" class="edit"><option value="yes">Product + shipping (excludes card fee)</option><option value="no">Full invoice total incl. card fee</option></select></div>
+      </div>
+      <h3 style="margin-top:16px">Sales reps</h3>
+      <div class="tbl" id="repsEdit"></div>
+      <p class="note">Reps are paid every Monday for the prior Mon–Sun (by the date the client paid) — see the Rep Payouts tab. Monthly tier bonuses are paid with the week that contains the month's last day.</p>
+      <p class="note">Rep statement links: add <code>#rep-caitlyn</code> (lower-case name, spaces as dashes) to the end of this page's link. That view shows only that rep's own sales and commission. The person still needs access to this page.</p>
+      <h3 style="margin-top:16px">Payment methods</h3>
+      <div class="field"><input id="sPayments" class="edit"><span class="note">comma-separated</span></div>
+      <div class="row" style="margin-top:12px"><button class="btn primary" id="saveSettings">Save settings</button></div>
+    </div>
+    <div class="card">
+      <h3>Shipping table</h3>
+      <div class="tbl" id="shipEdit"></div>
+      <p class="note">Charge is what the client pays. Cost is the estimate used until a real carrier cost is typed on the order.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-h"><h3>Product catalog</h3><button class="btn sm" id="addProduct">+ Add product</button></div>
+    <div class="tbl" id="prodEdit"></div>
+    <p class="note">Tier prices come from the Zemo bulk pricing sheet. Cost is your fallback unit cost; once a Product purchase is logged, the weighted average of what you paid takes over. Changes save when you leave the field.</p>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-h"><h3>Price change log</h3><span class="note">every tier or cost change, newest first. Past orders keep the cost that applied when they were sold.</span></div>
+    <div class="tbl" id="priceLog"></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-h"><h3>Client directory</h3><button class="btn sm" id="addClient">+ Add client</button></div>
+    <div class="tbl" id="clientEdit"></div>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+'use strict';
+// ---------- state ----------
+const S = { settings: null, products: [], clients: [], orders: [], purchases: [], priceHistory: [], payouts: [], closes: [], closeMonth: null, payWeek: null, repViewWeek: null, repView: null, repViewMonth: null, db: null, canWrite: null, downloads: null, editingId: null, dashMonth: null, ordersMonth: 'all' };
+const DEFAULTS = { squareFeePct: 0.05, deductSquareFromCommission: true, packagingFallback: 3, chaseDays: 14, revenueBasis: 'paid', shipping: [], reps: [], paymentMethods: ['Zelle','ACH','Square','Cash/Other'] };
+const $ = id => document.getElementById(id);
+const fmt = n => (n == null || isNaN(n)) ? '—' : n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+const pct = n => (n == null || !isFinite(n)) ? '—' : (n * 100).toFixed(1) + '%';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ymd = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; // local calendar date
+const today = () => ymd(new Date());
+const ym = d => (d || '').slice(0, 7);
+const monthLabel = m => { const [y, mo] = m.split('-'); return new Date(+y, +mo - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }); };
+let toastT; const toast = m => { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const settings = () => Object.assign({}, DEFAULTS, S.settings || {});
+// Which date an order counts on for revenue / commission / P&L. 'paid' = cash basis (Date Paid; unpaid orders count nothing yet). 'order' = order date.
+const recDate = o => settings().revenueBasis === 'order' ? o.date : (o.paid ? (o.datePaid || o.date) : null);
+const slug = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const addDays = (d, n) => { const x = new Date(d + 'T00:00:00'); x.setDate(x.getDate() + n); return ymd(x); };
+const weekStart = d => { const x = new Date(d + 'T00:00:00'); const dow = (x.getDay() + 6) % 7; x.setDate(x.getDate() - dow); return ymd(x); }; // Monday
+const weekLabel = mon => { const sun = addDays(mon, 6); const f = s => new Date(s + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); return `${f(mon)} – ${f(sun)}` + (sun < today() ? '' : ' (current)'); };
+const payDay = mon => addDays(mon, 7);
+const monthEnd = m => { const [y, mo] = m.split('-').map(Number); return ymd(new Date(y, mo, 0)); };
+
+// ---------- domain math ----------
+function tierIndex(q) { q = +q || 1; return q >= 100 ? 4 : q >= 50 ? 3 : q >= 20 ? 2 : q >= 10 ? 1 : 0; }
+function productByName(n) { return S.products.find(p => p.name === n); }
+function tierPrice(p, qty) { if (!p) return null; const t = p.tiers || []; const i = tierIndex(qty); for (let k = i; k >= 0; k--) if (t[k] != null) return t[k]; return p.price ?? null; }
+function purchaseStats() { // weighted avg cost + units restocked per product; supplies $ total
+  const m = {}; let supplies = 0;
+  for (const pu of S.purchases) {
+    if (pu.category === 'Product' && pu.product) { const e = m[pu.product] || (m[pu.product] = { units: 0, dollars: 0 }); e.units += +pu.qty || 0; e.dollars += +pu.total || 0; }
+    if (pu.category === 'Supplies') supplies += +pu.total || 0;
+  }
+  return { m, supplies };
+}
+function unitCost(p, ps) { if (!p) return 0; const e = ps.m[p.name]; return e && e.units > 0 ? e.dollars / e.units : (+p.cost || 0); }
+function shipmentsCount() { return S.orders.filter(o => o.shippingType && o.shippingType !== 'Local Pickup').length; }
+function packagingPerShipment(ps) { const n = shipmentsCount(); const st = settings(); return ps.supplies > 0 && n > 0 ? ps.supplies / n : (+st.packagingFallback || 0); }
+function calcOrder(o, ps) {
+  const st = settings();
+  let productSales = 0, cogs = 0;
+  const lines = (o.lines || []).map(l => {
+    const p = productByName(l.product); const qty = +l.qty || 0; const up = l.unitPrice != null && l.unitPrice !== '' ? +l.unitPrice : (tierPrice(p, qty) || 0);
+    const total = qty * up * (1 - (+l.promo || 0) / 100); const uc = l.costAtSale != null ? +l.costAtSale : unitCost(p, ps);
+    productSales += total; cogs += qty * uc; return Object.assign({}, l, { unitPriceUsed: up, total, unitCost: uc });
+  });
+  const shipRow = st.shipping.find(s => s.name === o.shippingType);
+  const shipCharge = o.shippingCharge != null && o.shippingCharge !== '' ? +o.shippingCharge : (shipRow ? +shipRow.charge : 0);
+  const shipCost = o.shippingCost != null && o.shippingCost !== '' ? +o.shippingCost : (shipRow ? +shipRow.cost : 0);
+  const discount = Math.min(productSales, (+o.discountAmt || 0) + productSales * ((+o.discountPct || 0) / 100));   // order-level discount, applied to products only
+  const subtotal = productSales - discount + shipCharge;
+  const squareCost = o.payment === 'Square' ? subtotal * (+st.squareFeePct || 0) : 0;   // what Square takes
+  const square = o.feeWaived ? 0 : squareCost;                                           // what we add to the invoice (normally the same)
+  const total = subtotal + square;
+  const packaging = o.shippingType && o.shippingType !== 'Local Pickup' ? packagingPerShipment(ps) : 0;
+  const rep = st.reps.find(r => r.name === o.rep);
+  const commission = rep ? (+rep.rate || 0) * (total - (st.deductSquareFromCommission ? square : 0)) : 0;
+  const profit = total - squareCost - cogs - shipCost - packaging - commission;
+  return { lines, productSales, discount, shipCharge, shipCost, subtotal, total, square, squareCost, feeWaived: !!o.feeWaived && squareCost > 0, packaging, cogs, commission, profit, net: total - squareCost };
+}
+function repMonthSummary(month, ps) { // per-rep base commission + tier true-up for a month
+  const st = settings(); const out = {};
+  for (const o of S.orders) { if (ym(recDate(o)) !== month || !o.rep) continue; const c = calcOrder(o, ps); const r = out[o.rep] || (out[o.rep] = { sales: 0, sq: 0, base: 0, n: 0, bonus: 0, total: 0 });
+    r.sales += c.total; r.sq += c.square; r.base += c.commission; r.n++; }
+  for (const [name, r] of Object.entries(out)) { const cfg = st.reps.find(x => x.name === name) || {}; const th = +cfg.bonusThreshold || 0, br = +cfg.bonusRate || 0;
+    r.rate = +cfg.rate || 0; r.bonusHit = th > 0 && r.sales >= th; r.bonus = r.bonusHit && br > r.rate ? (br - r.rate) * (r.sales - (st.deductSquareFromCommission ? r.sq : 0)) : 0; r.total = r.base + r.bonus; r.threshold = th; r.bonusRate = br; }
+  return out;
+}
+function weeksAvailable() { const set = new Set(S.orders.map(o => recDate(o)).filter(Boolean).map(weekStart)); set.add(weekStart(today())); set.add(weekStart(addDays(today(), -7))); return [...set].sort().reverse(); }
+function repWeekSummary(mon, ps) { // per rep: orders paid Mon–Sun, base commission, plus monthly tier bonus if the month closes inside this week
+  const sun = addDays(mon, 6); const st = settings(); const out = {};
+  for (const o of S.orders) { const d = recDate(o); if (!d || d < mon || d > sun || !o.rep) continue; const c = calcOrder(o, ps); const r = out[o.rep] || (out[o.rep] = { orders: [], sales: 0, sq: 0, base: 0, bonus: 0, bonusMonth: null, total: 0 });
+    r.orders.push({ num: o.num, date: o.date, datePaid: d, client: o.client, total: c.total, square: c.square, commission: c.commission }); r.sales += c.total; r.sq += c.square; r.base += c.commission; }
+  // month-end bonus true-up lands in the week containing the last day of the month
+  for (let d = mon; d <= sun; d = addDays(d, 1)) { if (d === monthEnd(ym(d))) { const ms = repMonthSummary(ym(d), ps); for (const [n, m] of Object.entries(ms)) { if (m.bonus > 0) { const r = out[n] || (out[n] = { orders: [], sales: 0, sq: 0, base: 0, bonus: 0, bonusMonth: null, total: 0 }); r.bonus += m.bonus; r.bonusMonth = ym(d); } } } }
+  for (const [n, r] of Object.entries(out)) { r.rate = +(st.reps.find(x => x.name === n) || {}).rate || 0; r.total = r.base + r.bonus; r.orders.sort((a, b) => (a.datePaid + a.num).localeCompare(b.datePaid + b.num)); }
+  return out;
+}
+const payoutId = (mon, n) => 'wk' + mon + '_' + slug(n);
+function nextOrderNum(date) {
+  const m = ym(date); const prefix = m.slice(2, 4) + m.slice(5, 7);
+  let max = 0; for (const o of S.orders) if (o.num && o.num.startsWith(prefix + '-')) max = Math.max(max, +o.num.slice(5) || 0);
+  return prefix + '-' + String(max + 1).padStart(3, '0');
+}
+function monthsAvailable() {
+  const set = new Set(S.orders.flatMap(o => [ym(o.date), ym(recDate(o))]).filter(Boolean)); set.add(ym(today()));
+  return [...set].sort().reverse();
+}
+function inventoryRows() {
+  const ps = purchaseStats(); const sold = {};
+  for (const o of S.orders) for (const l of o.lines || []) sold[l.product] = (sold[l.product] || 0) + (+l.qty || 0);
+  return S.products.slice().sort((a, b) => (a.order ?? 999) - (b.order ?? 999)).map(p => {
+    const opening = p.opening == null || p.opening === '' ? null : +p.opening;
+    const restocked = ps.m[p.name]?.units || 0; const s = sold[p.name] || 0;
+    const closing = (opening || 0) - s + restocked; const uc = unitCost(p, ps);
+    const status = closing < 0 ? 'CHECK' : closing <= (+p.reorderPt || 0) ? 'REORDER' : 'OK';
+    return { p, opening, sold: s, restocked, closing, uc, value: closing * uc, status };
+  });
+}
+
+// ---------- tabs ----------
+$('tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (!b) return; showTab(b.dataset.tab); });
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+  try { localStorage.setItem('zemo.tab', name); } catch (e) {}
+  if (name === 'new' && !S.editingId && !$('oDate').value) resetOrderForm();
+}
+
+// ---------- order form ----------
+let formLines = [];
+function fillSelect(sel, opts, value, placeholder) {
+  sel.innerHTML = (placeholder ? `<option value="">${esc(placeholder)}</option>` : '') + opts.map(o => `<option value="${esc(o)}"${o === value ? ' selected' : ''}>${esc(o)}</option>`).join('');
+}
+function productOptions(selected) {
+  return `<option value="">— product —</option>` + S.products.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option${p.name === selected ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
+}
+function renderLines() {
+  const ps = purchaseStats();
+  $('lineRows').innerHTML = formLines.map((l, i) => {
+    const p = productByName(l.product); const qty = +l.qty || 0;
+    const up = l.unitPrice != null && l.unitPrice !== '' ? +l.unitPrice : (tierPrice(p, qty) ?? '');
+    const total = qty * (+up || 0) * (1 - (+l.promo || 0) / 100);
+    return `<tr data-i="${i}">
+      <td><select class="edit lp" aria-label="Product">${productOptions(l.product)}</select></td>
+      <td class="r"><input class="edit qty lq" type="number" min="1" step="1" value="${esc(l.qty ?? 1)}" aria-label="Qty"></td>
+      <td class="r"><input class="edit price lu" type="number" step="0.01" value="${esc(up)}" aria-label="Unit price"></td>
+      <td class="r"><input class="edit promo lpr" type="number" step="1" min="0" max="100" value="${esc(l.promo || '')}" placeholder="0" aria-label="Promo"></td>
+      <td class="r num">${fmt(total)}</td>
+      <td class="r num">${p ? fmt(unitCost(p, ps)) : '—'}</td>
+      <td><button class="btn sm ldel" aria-label="Remove line">×</button></td></tr>`;
+  }).join('');
+  renderOrderTotals();
+}
+$('lineRows').addEventListener('input', e => {
+  const tr = e.target.closest('tr'); if (!tr) return; const l = formLines[+tr.dataset.i];
+  if (e.target.classList.contains('lq')) { l.qty = e.target.value; if (!l.priceTouched) { l.unitPrice = null; renderLines(); return; } }
+  if (e.target.classList.contains('lu')) { l.unitPrice = e.target.value; l.priceTouched = true; }
+  if (e.target.classList.contains('lpr')) l.promo = e.target.value;
+  if (e.target.classList.contains('lp')) { l.product = e.target.value; l.unitPrice = null; l.priceTouched = false; renderLines(); return; }
+  // update totals without rerendering inputs
+  renderOrderTotals(); const i = +tr.dataset.i; const row = calcLinePreview(l); tr.children[4].textContent = fmt(row);
+});
+$('lineRows').addEventListener('change', e => { if (e.target.classList.contains('lp') || e.target.classList.contains('lq')) renderLines(); });
+$('lineRows').addEventListener('click', e => { if (e.target.classList.contains('ldel')) { formLines.splice(+e.target.closest('tr').dataset.i, 1); renderLines(); } });
+function calcLinePreview(l) { const p = productByName(l.product); const qty = +l.qty || 0; const up = l.unitPrice != null && l.unitPrice !== '' ? +l.unitPrice : (tierPrice(p, qty) || 0); return qty * up * (1 - (+l.promo || 0) / 100); }
+$('addLine').onclick = () => { formLines.push({ product: '', qty: 1, unitPrice: null, promo: '' }); renderLines(); };
+function formOrder() {
+  return { id: S.editingId || uid(), num: S.editingId ? (S.orders.find(o => o.id === S.editingId)?.num) : nextOrderNum($('oDate').value || today()),
+    date: $('oDate').value || today(), client: $('oClient').value.trim(), provider: $('oProvider').value.trim(), rep: $('oRep').value,
+    shippingType: $('oShipType').value, shippingCharge: $('oShipCharge').value === '' ? null : +$('oShipCharge').value,
+    shippingCost: $('oShipCost').value === '' ? null : +$('oShipCost').value, payment: $('oPayment').value, tracking: $('oTracking').value.trim(),
+    datePaid: $('oDatePaid').value, shipped: $('oShipped').checked, paid: $('oPaid').checked, feeWaived: $('oFeeWaived').checked, discountAmt: +$('oDiscAmt').value || 0, discountPct: +$('oDiscPct').value || 0, notes: $('oNotes').value.trim(),
+    lines: formLines.filter(l => l.product).map(l => ({ product: l.product, qty: +l.qty || 0, unitPrice: l.unitPrice != null && l.unitPrice !== '' ? +l.unitPrice : (tierPrice(productByName(l.product), +l.qty || 0) ?? 0), promo: +l.promo || 0, costAtSale: l.costAtSale != null && l.costProduct === l.product ? l.costAtSale : unitCost(productByName(l.product), purchaseStats()) })) };
+}
+function renderOrderTotals() {
+  const o = formOrder(); const c = calcOrder(o, purchaseStats()); const st = settings();
+  $('orderNumPreview').textContent = 'Order # ' + (o.num || '');
+  $('orderTotals').innerHTML = [
+    ['Product sales', fmt(c.productSales)], ['Order discount', c.discount ? fmt(-c.discount) : '—'], ['Shipping charged', fmt(c.shipCharge)], ['Card processing fee' + (o.payment === 'Square' ? (c.feeWaived ? ' (not charged)' : ` (${pct(st.squareFeePct)}, charged to client)`) : ' (card payments only)'), fmt(c.square)], ['<b>Order total — what the clinic pays</b>', `<b class="big">${fmt(c.total)}</b>`],
+    ['Less Square processing', fmt(-c.squareCost)], ['Net received', fmt(c.net)],
+    ['Product cost (COGS)', fmt(c.cogs)], ['Shipping cost', fmt(c.shipCost)], ['Packaging', fmt(c.packaging)],
+    [`Commission${o.rep ? ' — ' + esc(o.rep) : ''}`, fmt(c.commission)], ['<b>Order profit</b>', `<b class="${c.profit < 0 ? 'bad' : ''}">${fmt(c.profit)}</b>`]
+  ].map(([k, v]) => `<div class="k">${k}</div><div class="num" style="text-align:right">${v}</div>`).join('');
+}
+['oDate','oClient','oProvider','oRep','oShipType','oShipCharge','oShipCost','oPayment','oTracking','oDatePaid','oShipped','oPaid','oFeeWaived','oDiscAmt','oDiscPct','oNotes'].forEach(id => $(id).addEventListener('input', renderOrderTotals));
+$('oShipType').addEventListener('change', () => { const row = settings().shipping.find(s => s.name === $('oShipType').value); $('oShipCharge').value = row ? row.charge : ''; renderOrderTotals(); });
+$('oClient').addEventListener('change', () => { const c = S.clients.find(x => x.name === $('oClient').value); if (c && c.defaultShipping && !$('oShipType').value) { $('oShipType').value = c.defaultShipping; $('oShipType').dispatchEvent(new Event('change')); } });
+$('oPaid').addEventListener('change', () => { if ($('oPaid').checked && !$('oDatePaid').value) $('oDatePaid').value = today(); renderOrderTotals(); });
+function resetOrderForm() {
+  S.editingId = null; $('orderFormTitle').textContent = 'New order';
+  $('oDate').value = today(); $('oClient').value = ''; $('oProvider').value = ''; $('oShipCharge').value = ''; $('oShipCost').value = ''; $('oTracking').value = ''; $('oDatePaid').value = ''; $('oNotes').value = '';
+  $('oShipped').checked = false; $('oPaid').checked = false; $('oFeeWaived').checked = false; $('oDiscAmt').value = ''; $('oDiscPct').value = ''; $('saveMsg').textContent = '';
+  const st = settings(); fillSelect($('oRep'), st.reps.map(r => r.name), st.reps[0]?.name, 'No rep'); fillSelect($('oShipType'), st.shipping.map(s => s.name), '', 'Select…'); fillSelect($('oPayment'), st.paymentMethods, 'Square');
+  formLines = [{ product: '', qty: 1, unitPrice: null, promo: '' }]; renderLines();
+}
+function loadOrderIntoForm(o) {
+  S.editingId = o.id; $('orderFormTitle').textContent = 'Edit order ' + o.num; const st = settings();
+  fillSelect($('oRep'), st.reps.map(r => r.name), o.rep, 'No rep'); fillSelect($('oShipType'), st.shipping.map(s => s.name), o.shippingType, 'Select…'); fillSelect($('oPayment'), st.paymentMethods, o.payment);
+  $('oDate').value = o.date; $('oClient').value = o.client || ''; $('oProvider').value = o.provider || ''; $('oShipCharge').value = o.shippingCharge ?? ''; $('oShipCost').value = o.shippingCost ?? '';
+  $('oTracking').value = o.tracking || ''; $('oDatePaid').value = o.datePaid || ''; $('oShipped').checked = !!o.shipped; $('oPaid').checked = !!o.paid; $('oFeeWaived').checked = !!o.feeWaived; $('oDiscAmt').value = o.discountAmt || ''; $('oDiscPct').value = o.discountPct || ''; $('oNotes').value = o.notes || '';
+  formLines = (o.lines || []).map(l => ({ product: l.product, qty: l.qty, unitPrice: l.unitPrice, promo: l.promo || '', priceTouched: true, costAtSale: l.costAtSale, costProduct: l.product })); if (!formLines.length) formLines = [{ product: '', qty: 1, unitPrice: null, promo: '' }];
+  renderLines(); showTab('new'); window.scrollTo({ top: 0 });
+}
+$('resetOrder').onclick = resetOrderForm;
+$('saveOrder').onclick = async () => {
+  const o = formOrder();
+  if (!o.client) return msg('Enter a client name.'); if (!o.lines.length) return msg('Add at least one product line.'); if (!o.shippingType) return msg('Pick a shipping type.');
+  o.updatedAt = new Date().toISOString(); if (!S.editingId) o.createdAt = o.updatedAt;
+  const ok = await write('orders', o.id, o); if (!ok) return;
+  if (o.client && !S.clients.find(c => c.name === o.client)) await write('clients', uid(), { name: o.client, state: '', contact: '', email: '', phone: '', defaultShipping: o.shippingType, notes: 'added from order ' + o.num });
+  toast('Saved ' + o.num); resetOrderForm(); showTab('orders');
+};
+function msg(t) { $('saveMsg').textContent = t; }
+
+// ---------- orders list ----------
+let pendingDelete = null;
+function renderOrders() {
+  const months = monthsAvailable(); const sel = $('ordersMonth');
+  sel.innerHTML = `<option value="all">All months</option>` + months.map(m => `<option value="${m}"${m === S.ordersMonth ? ' selected' : ''}>${monthLabel(m)}</option>`).join('');
+  const f = $('ordersFilter').value, q = $('ordersSearch').value.trim().toLowerCase(); const ps = purchaseStats();
+  let rows = S.orders.slice().sort((a, b) => (b.date + b.num).localeCompare(a.date + a.num));
+  if (S.ordersMonth !== 'all') rows = rows.filter(o => ym(o.date) === S.ordersMonth);
+  if (f === 'unpaid') rows = rows.filter(o => !o.paid); if (f === 'unshipped') rows = rows.filter(o => !o.shipped);
+  if (q) rows = rows.filter(o => (o.num + ' ' + o.client + ' ' + (o.lines || []).map(l => l.product).join(' ')).toLowerCase().includes(q));
+  const calc = rows.map(o => [o, calcOrder(o, ps)]);
+  const tot = calc.reduce((a, [o, c]) => { a.rev += c.total; a.unpaid += o.paid ? 0 : c.total; a.comm += c.commission; a.profit += c.profit; return a; }, { rev: 0, unpaid: 0, comm: 0, profit: 0 });
+  $('ordersKpis').innerHTML = kpi('Orders', rows.length) + kpi('Revenue', fmt(tot.rev)) + kpi('Unpaid', fmt(tot.unpaid), tot.unpaid > 0 ? 'bad' : '') + kpi('Commission', fmt(tot.comm)) + kpi('Profit', fmt(tot.profit), tot.profit < 0 ? 'bad' : 'good');
+  if (!rows.length) { $('ordersTable').innerHTML = `<div class="empty">No orders match. Use <b>New Order</b> to enter one.</div>`; return; }
+  $('ordersTable').innerHTML = `<table><thead><tr><th>Order #</th><th>Date</th><th>Client</th><th>Items</th><th>Shipping</th><th>Pay</th><th class="r">Total (incl. fee)</th><th class="r">Card fee</th><th class="r">Commission</th><th class="r">Profit</th><th>Shipped</th><th>Paid</th><th>Days</th><th></th></tr></thead><tbody>` +
+    calc.map(([o, c]) => {
+      const days = o.paid ? '' : Math.max(0, Math.round((Date.now() - new Date(o.date + 'T00:00:00')) / 864e5));
+      const items = (o.lines || []).map(l => `${l.qty}× ${esc(l.product)}`).join(', ');
+      return `<tr class="clickable" data-id="${o.id}"><td class="num">${esc(o.num)}</td><td class="num">${esc(o.date)}</td><td>${esc(o.client)}</td><td style="white-space:normal;min-width:220px;font-size:.85rem">${items}</td><td>${esc(o.shippingType)}</td><td>${esc(o.payment)}</td>
+        <td class="r num">${fmt(c.total)}${c.discount ? `<br><span class="note">−${fmt(c.discount)} disc.</span>` : ''}</td><td class="r num">${c.feeWaived ? `<span class="chip warn" title="Square fee ${fmt(c.squareCost)} absorbed">not charged</span>` : fmt(c.square)}</td><td class="r num">${fmt(c.commission)}</td><td class="r num ${c.profit < 0 ? 'bad' : ''}">${fmt(c.profit)}</td>
+        <td><button class="chip ${o.shipped ? 'good' : 'warn'} tog" data-k="shipped" style="border:0;cursor:pointer">${o.shipped ? 'Shipped' : 'Unshipped'}</button></td>
+        <td><button class="chip ${o.paid ? 'good' : 'bad'} tog" data-k="paid" style="border:0;cursor:pointer">${o.paid ? 'Paid' : 'Unpaid'}</button></td>
+        <td class="num">${days === '' ? '' : days + 'd'}</td>
+        <td>${pendingDelete === o.id ? `<span class="confirm"><button class="btn sm danger del-yes">Delete</button><button class="btn sm del-no">Keep</button></span>` : `<button class="btn sm del" aria-label="Delete order">🗑</button>`}</td></tr>`;
+    }).join('') + `</tbody></table>`;
+}
+$('ordersTable').addEventListener('click', async e => {
+  const tr = e.target.closest('tr[data-id]'); if (!tr) return; const o = S.orders.find(x => x.id === tr.dataset.id); if (!o) return;
+  if (e.target.classList.contains('tog')) { const k = e.target.dataset.k; const upd = { [k]: !o[k], updatedAt: new Date().toISOString() }; if (k === 'paid' && !o.paid && !o.datePaid) upd.datePaid = today(); await write('orders', o.id, Object.assign({}, o, upd)); return; }
+  if (e.target.classList.contains('del')) { pendingDelete = o.id; renderOrders(); return; }
+  if (e.target.classList.contains('del-no')) { pendingDelete = null; renderOrders(); return; }
+  if (e.target.classList.contains('del-yes')) { pendingDelete = null; await remove('orders', o.id); toast('Deleted ' + o.num); return; }
+  loadOrderIntoForm(o);
+});
+$('ordersMonth').onchange = e => { S.ordersMonth = e.target.value; renderOrders(); };
+$('ordersFilter').onchange = renderOrders; $('ordersSearch').oninput = renderOrders;
+$('exportOrders').onclick = async () => {
+  if (!S.downloads) return toast('Download not available in this view');
+  const ps = purchaseStats(); const head = ['Order #','Date','Clinic / Client','Patient or Provider','Product','Qty','Unit Price','Promo % Off','Line Total','Order Discount','Shipping Type (1st line of order only)','Shipping Charge','Order Total','Payment Method','Square Fee','Net Received','Sales Rep','Shipped','Paid','Date Paid','Tracking #','Notes','Unit Cost','COGS','Shipping Cost','Packaging Cost','Order Profit','Commission','Month'];
+  const rows = [head];
+  for (const o of S.orders.slice().sort((a, b) => (a.date + a.num).localeCompare(b.date + b.num))) { const c = calcOrder(o, ps);
+    c.lines.forEach((l, i) => rows.push([o.num, o.date, o.client, o.provider, l.product, l.qty, l.unitPriceUsed, l.promo || '', l.total.toFixed(2), i === 0 && c.discount ? c.discount.toFixed(2) : '', i === 0 ? o.shippingType : '', i === 0 ? c.shipCharge : '', i === 0 ? c.total.toFixed(2) : '', o.payment, i === 0 ? c.square.toFixed(2) : '', i === 0 ? c.net.toFixed(2) : '', o.rep, o.shipped, o.paid, o.datePaid, o.tracking, o.notes, l.unitCost.toFixed(2), (l.qty * l.unitCost).toFixed(2), i === 0 ? c.shipCost : '', i === 0 ? c.packaging.toFixed(2) : '', i === 0 ? c.profit.toFixed(2) : '', i === 0 ? c.commission.toFixed(2) : '', ym(o.date)])); }
+  const csv = rows.map(r => r.map(v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
+  try { await S.downloads.save({ filename: 'zemo-orders-' + today() + '.csv', data: csv }); } catch (e) { toast('Download cancelled'); }
+};
+
+// ---------- inventory ----------
+function renderInventory() {
+  const rows = inventoryRows();
+  const val = rows.reduce((a, r) => a + (r.closing > 0 ? r.value : 0), 0); const reorder = rows.filter(r => r.status === 'REORDER').length; const check = rows.filter(r => r.status === 'CHECK').length; const missing = rows.filter(r => r.opening == null).length;
+  $('invKpis').innerHTML = kpi('Products', rows.length) + kpi('Stock value', fmt(val)) + kpi('Need reorder', reorder, reorder ? 'bad' : 'good') + kpi('Negative (check)', check, check ? 'bad' : '') + kpi('No opening count', missing, missing ? 'bad' : 'good');
+  if (!rows.length) { $('invTable').innerHTML = `<div class="empty">No products yet. Add them under Catalog &amp; Settings.</div>`; return; }
+  $('invTable').innerHTML = `<table><thead><tr><th>Product</th><th class="r">Opening count</th><th class="r">Sold</th><th class="r">Restocked</th><th class="r">Closing</th><th class="r">Unit cost</th><th class="r">Stock value</th><th class="r">Reorder pt</th><th>Status</th></tr></thead><tbody>` +
+    rows.map(r => `<tr><td>${esc(r.p.name)}</td><td class="r"><input class="edit num inv-open" data-id="${r.p.id}" type="number" step="1" value="${r.opening ?? ''}" placeholder="count" style="width:90px;text-align:right" aria-label="Opening count"></td>
+      <td class="r num">${r.sold}</td><td class="r num">${r.restocked}</td><td class="r num"><b>${r.closing}</b></td><td class="r num">${fmt(r.uc)}</td><td class="r num">${fmt(r.closing > 0 ? r.value : 0)}</td><td class="r num">${r.p.reorderPt ?? ''}</td>
+      <td><span class="chip ${r.status === 'OK' ? 'good' : r.status === 'REORDER' ? 'warn' : 'bad'}">${r.status}</span></td></tr>`).join('') + `</tbody></table>`;
+}
+$('invTable').addEventListener('change', async e => { if (!e.target.classList.contains('inv-open')) return; const p = S.products.find(x => x.id === e.target.dataset.id); if (!p) return; await write('products', p.id, Object.assign({}, p, { opening: e.target.value === '' ? null : +e.target.value })); toast('Opening count saved'); });
+
+// ---------- purchases ----------
+$('pQty').oninput = $('pUnit').oninput = () => { const q = +$('pQty').value, u = +$('pUnit').value; if (q && u) $('pTotal').value = (q * u).toFixed(2); };
+$('pTotal').oninput = () => { const q = +$('pQty').value, t = +$('pTotal').value; if (q && t) $('pUnit').value = (t / q).toFixed(2); };
+$('savePurchase').onclick = async () => {
+  const pu = { id: uid(), date: $('pDate').value || today(), category: $('pCat').value, product: $('pCat').value === 'Product' ? $('pProduct').value : '', qty: +$('pQty').value || 0, unitCost: +$('pUnit').value || 0, total: +$('pTotal').value || 0, vendor: $('pVendor').value.trim(), notes: $('pNotes').value.trim(), createdAt: new Date().toISOString() };
+  if (pu.category === 'Product' && !pu.product) return toast('Pick the product being restocked'); if (!pu.total) return toast('Enter the total paid');
+  if (await write('purchases', pu.id, pu)) { toast('Purchase logged'); ['pQty','pUnit','pTotal','pVendor','pNotes'].forEach(id => $(id).value = ''); }
+};
+let pendingPurchDelete = null;
+function renderPurchases() {
+  fillSelect($('pProduct'), S.products.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => p.name), $('pProduct').value, '— product —');
+  if (!$('pDate').value) $('pDate').value = today();
+  const rows = S.purchases.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if (!rows.length) { $('purchTable').innerHTML = `<div class="empty">No purchases logged yet. Every restock, box of vials, or roll of labels goes here.</div>`; return; }
+  $('purchTable').innerHTML = `<table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th class="r">Units</th><th class="r">$/unit</th><th class="r">Total</th><th>Vendor</th><th>Notes</th><th></th></tr></thead><tbody>` +
+    rows.map(p => `<tr data-id="${p.id}"><td class="num">${esc(p.date)}</td><td>${esc(p.category)}</td><td>${esc(p.product)}</td><td class="r num">${p.qty || ''}</td><td class="r num">${p.unitCost ? fmt(p.unitCost) : ''}</td><td class="r num">${fmt(p.total)}</td><td>${esc(p.vendor)}</td><td style="white-space:normal">${esc(p.notes)}</td>
+      <td>${pendingPurchDelete === p.id ? `<span class="confirm"><button class="btn sm danger pdel-yes">Delete</button><button class="btn sm pdel-no">Keep</button></span>` : `<button class="btn sm pdel" aria-label="Delete">🗑</button>`}</td></tr>`).join('') +
+    `</tbody><tfoot><tr><td colspan="5">Total</td><td class="r num">${fmt(rows.reduce((a, p) => a + (+p.total || 0), 0))}</td><td colspan="3"></td></tr></tfoot></table>`;
+}
+$('purchTable').addEventListener('click', async e => { const tr = e.target.closest('tr[data-id]'); if (!tr) return; const id = tr.dataset.id;
+  if (e.target.classList.contains('pdel')) { pendingPurchDelete = id; renderPurchases(); } else if (e.target.classList.contains('pdel-no')) { pendingPurchDelete = null; renderPurchases(); } else if (e.target.classList.contains('pdel-yes')) { pendingPurchDelete = null; await remove('purchases', id); toast('Deleted'); } });
+
+// ---------- dashboard ----------
+function kpi(l, v, cls) { return `<div class="kpi"><div class="l">${l}</div><div class="v ${cls || ''}">${v}</div></div>`; }
+function renderDash() {
+  const months = monthsAvailable(); if (!S.dashMonth || !months.includes(S.dashMonth)) S.dashMonth = months[0];
+  $('dashMonth').innerHTML = months.map(m => `<option value="${m}"${m === S.dashMonth ? ' selected' : ''}>${monthLabel(m)}</option>`).join('');
+  const st = settings(); const ps = purchaseStats(); const orders = S.orders.filter(o => ym(recDate(o)) === S.dashMonth); const calc = orders.map(o => [o, calcOrder(o, ps)]); const booked = S.orders.filter(o => ym(o.date) === S.dashMonth); const openAll = S.orders.filter(o => !o.paid);
+  const t = calc.reduce((a, [o, c]) => { a.rev += c.total; a.prod += c.productSales - c.discount; a.disc += c.discount; a.ship += c.shipCharge; a.cogs += c.cogs; a.shipc += c.shipCost; a.pack += c.packaging; a.sq += c.squareCost; a.sqBilled += c.square; a.comm += c.commission; a.profit += c.profit; return a; }, { rev: 0, prod: 0, disc: 0, ship: 0, cogs: 0, shipc: 0, pack: 0, sq: 0, sqBilled: 0, comm: 0, profit: 0 });
+  t.unpaid = openAll.reduce((a, o) => a + calcOrder(o, ps).total, 0); t.unshipped = booked.filter(o => !o.shipped).length;
+  const spend = S.purchases.filter(p => ym(p.date) === S.dashMonth).reduce((a, p) => a + (+p.total || 0), 0);
+  const repsM = repMonthSummary(S.dashMonth, ps); const bonusTotal = Object.values(repsM).reduce((a, r) => a + r.bonus, 0); t.comm += bonusTotal; t.profit -= bonusTotal;
+  $('kpis').innerHTML = kpi('Revenue', fmt(t.rev)) + kpi('Product sales (net of discounts)', fmt(t.prod)) + kpi('Shipping charged', fmt(t.ship)) + kpi('COGS', fmt(t.cogs)) + kpi('Ship + packaging', fmt(t.shipc + t.pack)) + kpi('Card fees billed / paid', `${fmt(t.sqBilled)} <span class="note">/ ${fmt(t.sq)}</span>`) + kpi('Commission', fmt(t.comm)) + kpi('Net profit', fmt(t.profit), t.profit < 0 ? 'bad' : 'good') + kpi('Net margin', pct(t.rev ? t.profit / t.rev : null)) + kpi(st.revenueBasis === 'order' ? 'Orders' : 'Orders paid', orders.length) + kpi('Avg order', fmt(orders.length ? t.rev / orders.length : null)) + kpi('Orders booked', booked.length) + kpi('Unpaid (all open)', fmt(t.unpaid), t.unpaid ? 'bad' : '') + kpi('Unshipped (booked)', t.unshipped, t.unshipped ? 'bad' : '') + kpi('Cash on purchases', fmt(spend));
+  $('basisNote').textContent = st.revenueBasis === 'order' ? 'Counted on order date' : 'Counted on the date the client paid (cash basis). Unpaid orders are in Receivables.';
+  $('commRule').textContent = `Base rate × (sales${st.deductSquareFromCommission ? ' − Square fee' : ''}); bonus rate applies to the whole month once the threshold is hit`;
+  const repRows = Object.entries(repsM);
+  $('repTable').innerHTML = repRows.length ? `<table><thead><tr><th>Rep</th><th class="r">Orders</th><th class="r">Sales</th><th class="r">Square fees</th><th class="r">Rate</th><th class="r">Base commission</th><th class="r">Tier bonus</th><th class="r">Total due</th></tr></thead><tbody>` + repRows.map(([n, r]) => `<tr><td>${esc(n)}</td><td class="r num">${r.n}</td><td class="r num">${fmt(r.sales)}</td><td class="r num">${fmt(r.sq)}</td><td class="r num">${pct(r.rate)}${r.threshold ? `<br><span class="note">${pct(r.bonusRate)} at ${fmt(r.threshold)}</span>` : ''}</td><td class="r num">${fmt(r.base)}</td><td class="r num">${r.threshold ? (r.bonusHit ? `<span class="chip good">HIT</span> ${fmt(r.bonus)}` : `<span class="note">${fmt(r.threshold - r.sales)} to go</span>`) : '—'}</td><td class="r num"><b>${fmt(r.total)}</b></td></tr>`).join('') + `</tbody></table>` : `<div class="empty">No rep sales this month.</div>`;
+  // calendar
+  const [y, mo] = S.dashMonth.split('-').map(Number); const first = new Date(y, mo - 1, 1); const days = new Date(y, mo, 0).getDate(); const byDay = {}; for (const [o, c] of calc) { const d = +recDate(o).slice(8, 10); byDay[d] = (byDay[d] || 0) + c.total; }
+  let cal = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div class="hd">${d}</div>`).join(''); for (let i = 0; i < first.getDay(); i++) cal += '<div></div>';
+  for (let d = 1; d <= days; d++) cal += `<div class="d"><div class="dn">${d}</div><div class="dv">${byDay[d] ? '$' + Math.round(byDay[d]).toLocaleString() : ''}</div></div>`; $('cal').innerHTML = cal;
+  // clients
+  const cl = {}; for (const [o, c] of calc) { const e = cl[o.client] || (cl[o.client] = { sales: 0, n: 0, unpaid: 0, paid: 0 }); e.sales += c.total; e.n++; if (o.paid) e.paid++; else e.unpaid += c.total; }
+  const clRows = Object.entries(cl).sort((a, b) => b[1].sales - a[1].sales);
+  $('clientTable').innerHTML = clRows.length ? `<table><thead><tr><th>#</th><th>Client</th><th class="r">Sales</th><th class="r">Orders</th><th class="r">Paid</th><th class="r">Outstanding</th></tr></thead><tbody>` + clRows.map(([n, e], i) => `<tr><td class="num">${i + 1}</td><td>${esc(n)}</td><td class="r num">${fmt(e.sales)}</td><td class="r num">${e.n}</td><td class="r num">${e.paid}/${e.n}</td><td class="r num ${e.unpaid ? 'bad' : ''}">${fmt(e.unpaid)}</td></tr>`).join('') + `</tbody></table>` : `<div class="empty">No sales this month yet.</div>`;
+  // reorder
+  const inv = inventoryRows().filter(r => r.status !== 'OK');
+  $('reorderTable').innerHTML = inv.length ? `<table><thead><tr><th>Product</th><th class="r">Closing</th><th class="r">Reorder pt</th><th>Status</th></tr></thead><tbody>` + inv.map(r => `<tr><td>${esc(r.p.name)}</td><td class="r num">${r.closing}</td><td class="r num">${r.p.reorderPt ?? ''}</td><td><span class="chip ${r.status === 'REORDER' ? 'warn' : 'bad'}">${r.status}</span></td></tr>`).join('') + `</tbody></table>` : `<div class="empty">Everything is above its reorder point.</div>`;
+  // products
+  const pr = {}; for (const [o, c] of calc) for (const l of c.lines) { const e = pr[l.product] || (pr[l.product] = { qty: 0, sales: 0, cost: 0 }); e.qty += +l.qty || 0; e.sales += l.total; e.cost += (+l.qty || 0) * l.unitCost; }
+  const prRows = Object.entries(pr).sort((a, b) => b[1].sales - a[1].sales);
+  $('prodTable').innerHTML = prRows.length ? `<table><thead><tr><th>Product</th><th class="r">Qty</th><th class="r">Sales</th><th class="r">Avg price</th><th class="r">Product cost</th><th class="r">Gross profit</th><th class="r">Margin</th></tr></thead><tbody>` + prRows.map(([n, e]) => `<tr><td>${esc(n)}</td><td class="r num">${e.qty}</td><td class="r num">${fmt(e.sales)}</td><td class="r num">${fmt(e.qty ? e.sales / e.qty : null)}</td><td class="r num">${fmt(e.cost)}</td><td class="r num">${fmt(e.sales - e.cost)}</td><td class="r num">${pct(e.sales ? (e.sales - e.cost) / e.sales : null)}</td></tr>`).join('') +
+    `</tbody><tfoot><tr><td>Total</td><td class="r num">${prRows.reduce((a, [, e]) => a + e.qty, 0)}</td><td class="r num">${fmt(t.prod)}</td><td></td><td class="r num">${fmt(t.cogs)}</td><td class="r num">${fmt(t.prod - t.cogs)}</td><td class="r num">${pct(t.prod ? (t.prod - t.cogs) / t.prod : null)}</td></tr></tfoot></table>` : `<div class="empty">No product sales this month yet.</div>`;
+}
+$('dashMonth').onchange = e => { S.dashMonth = e.target.value; renderDash(); };
+
+// ---------- settings ----------
+let settingsDirty = false;
+function renderSettings() {
+  const st = settings();
+  if (!settingsDirty) {
+    $('sSquare').value = ((+st.squareFeePct || 0) * 100).toFixed(1); $('sPack').value = st.packagingFallback; $('sDeduct').value = st.deductSquareFromCommission ? 'yes' : 'no'; $('sBasis').value = st.revenueBasis || 'paid'; $('sPayments').value = (st.paymentMethods || []).join(', ');
+    $('repsEdit').innerHTML = `<table><thead><tr><th>Rep</th><th class="r">Base rate %</th><th class="r">Bonus threshold ($/mo)</th><th class="r">Bonus rate %</th><th></th></tr></thead><tbody>` + st.reps.map((r, i) => `<tr><td><input class="edit rep-n" data-i="${i}" value="${esc(r.name)}"></td><td><input class="edit rep-r num" data-i="${i}" type="number" step="0.5" value="${((+r.rate || 0) * 100).toFixed(1)}" style="width:80px"></td><td><input class="edit rep-t num" data-i="${i}" type="number" step="1000" value="${r.bonusThreshold ?? ''}" placeholder="none" style="width:110px"></td><td><input class="edit rep-b num" data-i="${i}" type="number" step="0.5" value="${r.bonusRate != null ? (r.bonusRate * 100).toFixed(1) : ''}" style="width:80px"></td><td><button class="btn sm rep-del" data-i="${i}">×</button></td></tr>`).join('') + `<tr><td colspan="5"><button class="btn sm" id="repAdd">+ Add rep</button></td></tr></tbody></table>`;
+    $('shipEdit').innerHTML = `<table><thead><tr><th>Shipping type</th><th class="r">Charge to client</th><th class="r">Our est. cost</th><th></th></tr></thead><tbody>` + st.shipping.map((s, i) => `<tr><td><input class="edit sh-n" data-i="${i}" value="${esc(s.name)}"></td><td><input class="edit sh-c num" data-i="${i}" type="number" step="0.01" value="${s.charge}" style="width:100px"></td><td><input class="edit sh-k num" data-i="${i}" type="number" step="0.01" value="${s.cost}" style="width:100px"></td><td><button class="btn sm sh-del" data-i="${i}">×</button></td></tr>`).join('') + `<tr><td colspan="4"><button class="btn sm" id="shAdd">+ Add shipping type</button></td></tr></tbody></table>`;
+  }
+  const prods = S.products.slice().sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+  $('prodEdit').innerHTML = prods.length ? `<table><thead><tr><th>Product</th><th class="r">Tier 1 (1–9)</th><th class="r">Tier 2 (10–19)</th><th class="r">Tier 3 (20–49)</th><th class="r">Tier 4 (50–99)</th><th class="r">Tier 5 (100+)</th><th class="r">Unit cost</th><th class="r">Reorder pt</th><th></th></tr></thead><tbody>` +
+    prods.map(p => { const t = p.tiers || [p.price, null, null, null, null]; return `<tr data-id="${p.id}"><td><input class="edit pe" data-k="name" value="${esc(p.name)}" style="min-width:230px"></td>` + [0,1,2,3,4].map(i => `<td><input class="edit pe num" data-k="t${i}" type="number" step="0.01" value="${t[i] ?? ''}" style="width:84px"></td>`).join('') + `<td><input class="edit pe num" data-k="cost" type="number" step="0.01" value="${p.cost ?? ''}" style="width:84px"></td><td><input class="edit pe num" data-k="reorderPt" type="number" step="1" value="${p.reorderPt ?? ''}" style="width:70px"></td><td><button class="btn sm pe-del" aria-label="Remove product">×</button></td></tr>`; }).join('') + `</tbody></table>` : `<div class="empty">No products yet.</div>`;
+  const cls = S.clients.slice().sort((a, b) => a.name.localeCompare(b.name));
+  $('clientEdit').innerHTML = cls.length ? `<table><thead><tr><th>Client</th><th>State</th><th>Contact</th><th>Email</th><th>Phone</th><th>Default shipping</th><th>Notes</th><th></th></tr></thead><tbody>` +
+    cls.map(c => `<tr data-id="${c.id}"><td><input class="edit ce" data-k="name" value="${esc(c.name)}" style="min-width:200px"></td><td><input class="edit ce" data-k="state" value="${esc(c.state)}" style="width:60px"></td><td><input class="edit ce" data-k="contact" value="${esc(c.contact)}"></td><td><input class="edit ce" data-k="email" value="${esc(c.email)}"></td><td><input class="edit ce" data-k="phone" value="${esc(c.phone)}" style="width:130px"></td><td><select class="edit ce" data-k="defaultShipping"><option value="">—</option>${st.shipping.map(s => `<option${s.name === c.defaultShipping ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}</select></td><td><input class="edit ce" data-k="notes" value="${esc(c.notes)}"></td><td><button class="btn sm ce-del" aria-label="Remove client">×</button></td></tr>`).join('') + `</tbody></table>` : `<div class="empty">No clients yet.</div>`;
+  $('clientList').innerHTML = cls.map(c => `<option value="${esc(c.name)}">`).join('');
+}
+['sSquare','sPack','sDeduct','sBasis','sPayments'].forEach(id => $(id).addEventListener('input', () => settingsDirty = true));
+$('repsEdit').addEventListener('input', () => settingsDirty = true); $('shipEdit').addEventListener('input', () => settingsDirty = true);
+function readSettingsForm() {
+  const st = settings();
+  const reps = [...$('repsEdit').querySelectorAll('tr[data-i], tbody tr')].filter(tr => tr.querySelector('.rep-n')).map(tr => ({ name: tr.querySelector('.rep-n').value.trim(), rate: (+tr.querySelector('.rep-r').value || 0) / 100, bonusThreshold: +tr.querySelector('.rep-t').value || null, bonusRate: tr.querySelector('.rep-b').value === '' ? null : (+tr.querySelector('.rep-b').value) / 100 })).filter(r => r.name);
+  const shipping = [...$('shipEdit').querySelectorAll('tbody tr')].filter(tr => tr.querySelector('.sh-n')).map(tr => ({ name: tr.querySelector('.sh-n').value.trim(), charge: +tr.querySelector('.sh-c').value || 0, cost: +tr.querySelector('.sh-k').value || 0 })).filter(s => s.name);
+  return Object.assign({}, st, { squareFeePct: (+$('sSquare').value || 0) / 100, packagingFallback: +$('sPack').value || 0, deductSquareFromCommission: $('sDeduct').value === 'yes', revenueBasis: $('sBasis').value, paymentMethods: $('sPayments').value.split(',').map(s => s.trim()).filter(Boolean), reps, shipping });
+}
+$('saveSettings').onclick = async () => { const st = readSettingsForm(); if (await write('settings', 'main', st)) { settingsDirty = false; toast('Settings saved'); } };
+document.addEventListener('click', e => {
+  if (e.target.id === 'repAdd') { S.settings = Object.assign({}, readSettingsForm()); S.settings.reps.push({ name: '', rate: 0.15, bonusThreshold: null, bonusRate: null }); settingsDirty = false; renderSettings(); settingsDirty = true; }
+  if (e.target.id === 'shAdd') { S.settings = Object.assign({}, readSettingsForm()); S.settings.shipping.push({ name: '', charge: 0, cost: 0 }); settingsDirty = false; renderSettings(); settingsDirty = true; }
+  if (e.target.classList.contains('rep-del')) { S.settings = readSettingsForm(); S.settings.reps.splice(+e.target.dataset.i, 1); settingsDirty = false; renderSettings(); settingsDirty = true; }
+  if (e.target.classList.contains('sh-del')) { S.settings = readSettingsForm(); S.settings.shipping.splice(+e.target.dataset.i, 1); settingsDirty = false; renderSettings(); settingsDirty = true; }
+});
+$('prodEdit').addEventListener('change', async e => { if (!e.target.classList.contains('pe')) return; const tr = e.target.closest('tr'); const p = S.products.find(x => x.id === tr.dataset.id); if (!p) return;
+  const np = Object.assign({}, p); const t = (p.tiers || [p.price, null, null, null, null]).slice(); tr.querySelectorAll('.pe').forEach(inp => { const k = inp.dataset.k; if (k.startsWith('t')) t[+k[1]] = inp.value === '' ? null : +inp.value; else if (k === 'name') np.name = inp.value.trim(); else np[k] = inp.value === '' ? null : +inp.value; });
+  np.tiers = t; np.price = t[0]; if (!np.name) return;
+  const changed = JSON.stringify(p.tiers || []) !== JSON.stringify(t) || (+p.cost || 0) !== (+np.cost || 0);
+  if (await write('products', p.id, np)) { toast('Product saved'); if (changed) await write('priceHistory', uid(), { productId: p.id, product: np.name, changedAt: new Date().toISOString(), oldTiers: p.tiers || null, newTiers: t, oldCost: p.cost ?? null, newCost: np.cost ?? null }); } });
+$('prodEdit').addEventListener('click', async e => { if (!e.target.classList.contains('pe-del')) return; const tr = e.target.closest('tr'); if (!e.target.dataset.armed) { e.target.dataset.armed = '1'; e.target.textContent = 'Remove?'; e.target.classList.add('danger'); return; } await remove('products', tr.dataset.id); toast('Product removed'); });
+$('addProduct').onclick = async () => { const order = Math.max(0, ...S.products.map(p => p.order ?? 0)) + 1; await write('products', uid(), { name: 'New product ' + order, price: null, cost: null, tiers: [null, null, null, null, null], reorderPt: 10, opening: null, order }); toast('Product added — edit its name and tiers'); };
+$('clientEdit').addEventListener('change', async e => { if (!e.target.classList.contains('ce')) return; const tr = e.target.closest('tr'); const c = S.clients.find(x => x.id === tr.dataset.id); if (!c) return; const nc = Object.assign({}, c); tr.querySelectorAll('.ce').forEach(inp => nc[inp.dataset.k] = inp.value.trim()); if (!nc.name) return; if (await write('clients', c.id, nc)) toast('Client saved'); });
+$('clientEdit').addEventListener('click', async e => { if (!e.target.classList.contains('ce-del')) return; const tr = e.target.closest('tr'); if (!e.target.dataset.armed) { e.target.dataset.armed = '1'; e.target.textContent = 'Remove?'; e.target.classList.add('danger'); return; } await remove('clients', tr.dataset.id); toast('Client removed'); });
+$('addClient').onclick = async () => { await write('clients', uid(), { name: 'New client', state: 'FL', contact: '', email: '', phone: '', defaultShipping: '', notes: '' }); toast('Client added — edit the name'); };
+
+// ---------- price log ----------
+function renderPriceLog() {
+  const rows = S.priceHistory.slice().sort((a, b) => (b.changedAt || '').localeCompare(a.changedAt || '')).slice(0, 100);
+  const tiers = t => (t || []).map(x => x == null ? '—' : '$' + x).join(' / ');
+  $('priceLog').innerHTML = rows.length ? `<table><thead><tr><th>When</th><th>Product</th><th>Tiers before</th><th>Tiers after</th><th class="r">Cost before</th><th class="r">Cost after</th></tr></thead><tbody>` +
+    rows.map(r => `<tr><td class="num">${esc((r.changedAt || '').slice(0, 16).replace('T', ' '))}</td><td>${esc(r.product)}</td><td class="num">${tiers(r.oldTiers)}</td><td class="num">${tiers(r.newTiers)}</td><td class="r num">${r.oldCost == null ? '—' : fmt(r.oldCost)}</td><td class="r num">${r.newCost == null ? '—' : fmt(r.newCost)}</td></tr>`).join('') + `</tbody></table>` : `<div class="empty">No price changes yet. Edits to tiers or cost in the catalog above are logged here.</div>`;
+}
+
+// ---------- receivables ----------
+function openInvoices() {
+  const ps = purchaseStats();
+  return S.orders.filter(o => !o.paid).map(o => { const c = calcOrder(o, ps); const days = Math.max(0, Math.round((Date.now() - new Date(o.date + 'T00:00:00')) / 864e5)); const cl = S.clients.find(x => x.name === o.client) || {}; return { o, c, days, cl }; }).sort((a, b) => b.days - a.days);
+}
+function reminderText(r) { const who = r.cl.contact ? r.cl.contact.split(' ')[0] : r.o.client; return `Hi ${who}, quick reminder from Zemo Labs: order ${r.o.num} from ${r.o.date} (${fmt(r.c.total)}) is still open. Let us know if you need the invoice resent or want to pay by Zelle/ACH. Thank you!`; }
+function copyText(t, btn) { const done = () => { const old = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => btn.textContent = old, 1500); }; try { navigator.clipboard.writeText(t).then(done, () => { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) {} ta.remove(); done(); }); } catch (e) { toast('Copy not available'); } }
+function renderReceivables() {
+  const st = settings(); if (document.activeElement !== $('chaseDays')) $('chaseDays').value = st.chaseDays;
+  const all = openInvoices(); const due = all.filter(r => r.days >= (+st.chaseDays || 0));
+  const sum = a => a.reduce((x, r) => x + r.c.total, 0);
+  $('recvKpis').innerHTML = kpi('Open invoices', all.length) + kpi('Open $', fmt(sum(all)), all.length ? 'bad' : 'good') + kpi(`Over ${st.chaseDays} days`, due.length, due.length ? 'bad' : 'good') + kpi('Overdue $', fmt(sum(due)), due.length ? 'bad' : '') + kpi('Oldest', all.length ? all[0].days + 'd' : '—');
+  const row = r => `<tr data-id="${r.o.id}"><td class="num">${esc(r.o.num)}</td><td class="num">${esc(r.o.date)}</td><td class="r num"><b>${r.days}d</b></td><td>${esc(r.o.client)}</td><td>${esc(r.cl.contact || '')}</td><td class="num">${esc(r.cl.phone || '')}</td><td>${esc(r.cl.email || '')}</td><td class="r num">${fmt(r.c.total)}</td><td>${esc(r.o.rep || '')}</td><td><button class="btn sm copybtn rem">Copy reminder</button> <button class="btn sm markpaid">Mark paid</button></td></tr>`;
+  const head = `<table><thead><tr><th>Order #</th><th>Date</th><th class="r">Days</th><th>Client</th><th>Contact</th><th>Phone</th><th>Email</th><th class="r">Amount</th><th>Rep</th><th></th></tr></thead><tbody>`;
+  $('recvTable').innerHTML = due.length ? head + due.map(row).join('') + `</tbody></table>` : `<div class="empty">Nothing over ${st.chaseDays} days. Clean.</div>`;
+  $('recvAllTable').innerHTML = all.length ? head + all.map(row).join('') + `</tbody></table>` : `<div class="empty">No open invoices.</div>`;
+}
+$('chaseDays').addEventListener('change', async () => { const st = settings(); st.chaseDays = +$('chaseDays').value || 0; if (await write('settings', 'main', st)) toast('Saved'); });
+for (const id of ['recvTable', 'recvAllTable']) $(id).addEventListener('click', async e => { const tr = e.target.closest('tr[data-id]'); if (!tr) return; const r = openInvoices().find(x => x.o.id === tr.dataset.id); if (!r) return;
+  if (e.target.classList.contains('rem')) copyText(reminderText(r), e.target);
+  if (e.target.classList.contains('markpaid')) { await write('orders', r.o.id, Object.assign({}, r.o, { paid: true, datePaid: r.o.datePaid || today(), updatedAt: new Date().toISOString() })); toast('Marked paid ' + r.o.num); } });
+
+// ---------- month close ----------
+function closeData(month) {
+  const st = settings(); const ps = purchaseStats(); const end = monthEnd(month);
+  const orders = S.orders.filter(o => ym(recDate(o)) === month).sort((a, b) => (recDate(a) + a.num).localeCompare(recDate(b) + b.num)); const calc = orders.map(o => [o, calcOrder(o, ps)]);
+  const t = calc.reduce((a, [o, c]) => { a.rev += c.total; a.prod += c.productSales - c.discount; a.disc += c.discount; a.ship += c.shipCharge; a.cogs += c.cogs; a.shipc += c.shipCost; a.pack += c.packaging; a.sq += c.squareCost; a.sqBilled += c.square; a.comm += c.commission; return a; }, { rev: 0, prod: 0, disc: 0, ship: 0, cogs: 0, shipc: 0, pack: 0, sq: 0, sqBilled: 0, comm: 0 });
+  const reps = repMonthSummary(month, ps); const bonus = Object.values(reps).reduce((a, r) => a + r.bonus, 0);
+  t.commTotal = t.comm + bonus; t.profit = t.rev - t.sq - t.cogs - t.shipc - t.pack - t.commTotal; t.orders = orders.length; t.aov = orders.length ? t.rev / orders.length : null; t.margin = t.rev ? t.profit / t.rev : null;
+  const repOrders = {}; for (const [o, c] of calc) if (o.rep) (repOrders[o.rep] = repOrders[o.rep] || []).push({ num: o.num, date: o.date, datePaid: recDate(o), client: o.client, total: c.total, square: c.square, commission: c.commission, paid: !!o.paid });
+  // inventory valuation at month end
+  const sold = {}, restocked = {}; for (const o of S.orders) if (o.date <= end) for (const l of o.lines || []) sold[l.product] = (sold[l.product] || 0) + (+l.qty || 0);
+  for (const pu of S.purchases) if (pu.category === 'Product' && pu.date <= end) restocked[pu.product] = (restocked[pu.product] || 0) + (+pu.qty || 0);
+  const inv = S.products.slice().sort((a, b) => (a.order ?? 999) - (b.order ?? 999)).map(p => { const closing = (+p.opening || 0) - (sold[p.name] || 0) + (restocked[p.name] || 0); const uc = unitCost(p, ps); return { product: p.name, closing, unitCost: uc, value: closing > 0 ? closing * uc : 0 }; });
+  const invTotal = inv.reduce((a, r) => a + r.value, 0);
+  const recv = S.orders.filter(o => o.date <= end && (!o.paid || (o.datePaid && o.datePaid > end))).map(o => ({ num: o.num, date: o.date, client: o.client, total: calcOrder(o, ps).total }));
+  const recvTotal = recv.reduce((a, r) => a + r.total, 0);
+  const purchases = S.purchases.filter(pu => ym(pu.date) === month).reduce((a, pu) => a + (+pu.total || 0), 0);
+  return { month, pnl: t, reps, repOrders, inv, invTotal, recv, recvTotal, purchases };
+}
+function pnlRows(t) { return [['Revenue (product + shipping + card fees billed)', t.rev], ['  Product sales (after discounts of ' + fmt(t.disc || 0) + ')', t.prod], ['  Shipping charged', t.ship], ['  Card fees billed to clients', t.sqBilled || 0], ['Card processing fees paid to Square', -t.sq], ['Cost of product sold (COGS)', -t.cogs], ['Shipping cost', -t.shipc], ['Packaging', -t.pack], ['Sales commission (incl. tier bonus)', -t.commTotal], ['NET PROFIT', t.profit]]; }
+function renderClose() {
+  const months = monthsAvailable(); if (!S.closeMonth || !months.includes(S.closeMonth)) S.closeMonth = months[0];
+  $('closeMonth').innerHTML = months.map(m => `<option value="${m}"${m === S.closeMonth ? ' selected' : ''}>${monthLabel(m)}</option>`).join('');
+  const locked = S.closes.find(c => c.id === S.closeMonth); const d = locked ? locked.snapshot : closeData(S.closeMonth);
+  $('closeBanner').innerHTML = locked ? `<div class="banner">Locked on ${esc((locked.closedAt || '').slice(0, 10))}. Figures below are the frozen snapshot; later edits to orders or prices do not change them.</div>` : '';
+  $('lockMonth').textContent = locked ? 'Unlock month' : 'Lock month';
+  const t = d.pnl; const st = settings();
+  let html = `<div class="card sec"><h2>${monthLabel(d.month)} — Zemo Labs close report</h2><div class="grid two" style="margin-top:12px"><div class="tbl"><table><tbody>` +
+    pnlRows(t).map(([k, v]) => `<tr><td${k.startsWith('  ') ? ' style="padding-left:24px;color:var(--muted)"' : ''}>${k === 'NET PROFIT' ? '<b>' + k + '</b>' : esc(k)}</td><td class="r num">${k === 'NET PROFIT' ? '<b>' + fmt(v) + '</b>' : fmt(v)}</td></tr>`).join('') + `</tbody></table></div>` +
+    `<div class="grid kpis">${kpi('Net margin', pct(t.margin))}${kpi('Orders', t.orders)}${kpi('Avg order', fmt(t.aov))}${kpi('Cash spent on purchases', fmt(d.purchases))}${kpi('Inventory value (month end)', fmt(d.invTotal))}${kpi('Receivables open (month end)', fmt(d.recvTotal), d.recvTotal ? 'bad' : 'good')}</div></div></div>`;
+  // rep statements
+  html += `<div class="card sec"><h3>Rep payout statements</h3>`;
+  const repNames = Object.keys(d.reps);
+  if (!repNames.length) html += `<div class="empty">No rep sales this month.</div>`;
+  for (const n of repNames) { const r = d.reps[n]; const po = S.payouts.find(x => x.id === d.month + '_' + slug(n)); const os = d.repOrders[n] || [];
+    html += `<div class="sec"><div class="card-h"><h3>${esc(n)}</h3><div class="row"><span class="num"><b>Total due ${fmt(r.total)}</b></span><button class="btn sm exp-rep" data-rep="${esc(n)}">Export statement</button><span class="note">${(() => { const wk = S.payouts.filter(p => p.week && p.rep === n && ym(payDay(p.week)) === d.month || (p.week && p.rep === n && ym(p.week) === d.month)); const pd = wk.filter(p => p.paid); return wk.length ? `Weekly payouts: ${pd.length}/${wk.length} paid (${fmt(pd.reduce((a, p) => a + (+p.amount || 0), 0))})` : 'Paid weekly — see Rep Payouts tab'; })()}</span></div></div>
+      <div class="tbl"><table><thead><tr><th>Order #</th><th>Ordered</th><th>Paid</th><th>Client</th><th class="r">Order total</th><th class="r">Square fee</th><th class="r">Commission (${pct(r.rate)})</th><th>Client paid</th></tr></thead><tbody>` +
+      os.map(x => `<tr><td class="num">${esc(x.num)}</td><td class="num">${esc(x.date)}</td><td class="num">${esc(x.datePaid || '')}</td><td>${esc(x.client)}</td><td class="r num">${fmt(x.total)}</td><td class="r num">${fmt(x.square)}</td><td class="r num">${fmt(x.commission)}</td><td><span class="chip ${x.paid ? 'good' : 'bad'}">${x.paid ? 'Paid' : 'Unpaid'}</span></td></tr>`).join('') +
+      `</tbody><tfoot><tr><td colspan="4">Sales ${r.n} orders</td><td class="r num">${fmt(r.sales)}</td><td class="r num">${fmt(r.sq)}</td><td class="r num">${fmt(r.base)}</td><td></td></tr>` +
+      (r.threshold ? `<tr><td colspan="6">Tier bonus — ${pct(r.bonusRate)} rate at ${fmt(r.threshold)}/month: ${r.bonusHit ? 'reached' : 'not reached (' + fmt(r.threshold - r.sales) + ' short)'}</td><td class="r num">${fmt(r.bonus)}</td><td></td></tr>` : '') +
+      `<tr><td colspan="6"><b>Total commission due</b></td><td class="r num"><b>${fmt(r.total)}</b></td><td></td></tr></tfoot></table></div></div>`; }
+  html += `</div>`;
+  // inventory valuation
+  const invRows = d.inv.filter(r => r.closing !== 0 || r.value);
+  html += `<div class="card sec"><div class="card-h"><h3>Inventory valuation at ${esc(monthEnd(d.month))}</h3><span class="num"><b>${fmt(d.invTotal)}</b></span></div><div class="tbl"><table><thead><tr><th>Product</th><th class="r">Units on hand</th><th class="r">Unit cost</th><th class="r">Value</th></tr></thead><tbody>` +
+    invRows.map(r => `<tr><td>${esc(r.product)}</td><td class="r num ${r.closing < 0 ? 'bad' : ''}">${r.closing}</td><td class="r num">${fmt(r.unitCost)}</td><td class="r num">${fmt(r.value)}</td></tr>`).join('') + `</tbody><tfoot><tr><td colspan="3">Total</td><td class="r num">${fmt(d.invTotal)}</td></tr></tfoot></table></div></div>`;
+  // receivables
+  html += `<div class="card sec"><div class="card-h"><h3>Receivables open at month end</h3><span class="num"><b>${fmt(d.recvTotal)}</b></span></div>` + (d.recv.length ? `<div class="tbl"><table><thead><tr><th>Order #</th><th>Date</th><th>Client</th><th class="r">Amount</th></tr></thead><tbody>` + d.recv.map(r => `<tr><td class="num">${esc(r.num)}</td><td class="num">${esc(r.date)}</td><td>${esc(r.client)}</td><td class="r num">${fmt(r.total)}</td></tr>`).join('') + `</tbody></table></div>` : `<div class="empty">Everything collected.</div>`) + `</div>`;
+  $('closeReport').innerHTML = html;
+}
+$('closeMonth').onchange = e => { S.closeMonth = e.target.value; renderClose(); };
+$('lockMonth').onclick = async () => { const locked = S.closes.find(c => c.id === S.closeMonth);
+  if (locked) { await remove('closes', S.closeMonth); toast('Month unlocked'); return; }
+  const snap = closeData(S.closeMonth); if (await write('closes', S.closeMonth, { closedAt: new Date().toISOString(), snapshot: snap })) toast(monthLabel(S.closeMonth) + ' locked'); };
+
+$('closeReport').addEventListener('click', e => { if (e.target.classList.contains('exp-rep')) exportRepStatement(S.closeMonth, e.target.dataset.rep); });
+const csvq = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+const toCsv = rows => rows.map(r => r.map(csvq).join(',')).join('\n');
+async function download(filename, data) { if (!S.downloads) return toast('Download not available in this view'); try { await S.downloads.save({ filename, data }); } catch (e) { toast('Download cancelled'); } }
+function repStatementRows(month, n, d) { const r = d.reps[n]; const os = d.repOrders[n] || []; const rows = [[`Zemo Labs — commission statement — ${n} — ${monthLabel(month)}`], [], ['Order #', 'Ordered', 'Paid', 'Client', 'Order total', 'Square fee', 'Commission base', 'Rate', 'Commission', 'Client paid']];
+  for (const x of os) rows.push([x.num, x.date, x.datePaid || '', x.client, x.total.toFixed(2), x.square.toFixed(2), (x.total - (settings().deductSquareFromCommission ? x.square : 0)).toFixed(2), (r.rate * 100).toFixed(1) + '%', x.commission.toFixed(2), x.paid ? 'Yes' : 'No']);
+  rows.push([], ['Orders', r.n], ['Sales', r.sales.toFixed(2)], ['Square fees', r.sq.toFixed(2)], ['Base commission', r.base.toFixed(2)]);
+  if (r.threshold) rows.push([`Tier bonus (${(r.bonusRate * 100).toFixed(1)}% at $${r.threshold})`, r.bonus.toFixed(2), r.bonusHit ? 'reached' : 'not reached']);
+  rows.push(['TOTAL COMMISSION DUE', r.total.toFixed(2)]); return rows; }
+function exportRepStatement(month, n) { const locked = S.closes.find(c => c.id === month); const d = locked ? locked.snapshot : closeData(month); if (!d.reps[n]) return toast('No sales for ' + n); download(`zemo-statement-${slug(n)}-${month}.csv`, toCsv(repStatementRows(month, n, d))); }
+$('exportClose').onclick = () => { const locked = S.closes.find(c => c.id === S.closeMonth); const d = locked ? locked.snapshot : closeData(S.closeMonth); const t = d.pnl;
+  const rows = [[`Zemo Labs — month close — ${monthLabel(d.month)}${locked ? ' (locked ' + (locked.closedAt || '').slice(0, 10) + ')' : ''}`], [], ['P&L'], ...pnlRows(t).map(([k, v]) => [k.trim(), v.toFixed(2)]), ['Net margin', t.margin == null ? '' : (t.margin * 100).toFixed(1) + '%'], ['Orders', t.orders], ['Avg order', t.aov == null ? '' : t.aov.toFixed(2)], ['Cash spent on purchases', d.purchases.toFixed(2)], []];
+  for (const n of Object.keys(d.reps)) rows.push(...repStatementRows(d.month, n, d), []);
+  rows.push(['INVENTORY VALUATION AT ' + monthEnd(d.month)], ['Product', 'Units on hand', 'Unit cost', 'Value']); for (const r of d.inv) rows.push([r.product, r.closing, r.unitCost.toFixed(2), r.value.toFixed(2)]); rows.push(['TOTAL', '', '', d.invTotal.toFixed(2)], []);
+  rows.push(['RECEIVABLES OPEN AT MONTH END'], ['Order #', 'Date', 'Client', 'Amount']); for (const r of d.recv) rows.push([r.num, r.date, r.client, r.total.toFixed(2)]); rows.push(['TOTAL', '', '', d.recvTotal.toFixed(2)]);
+  download(`zemo-close-${d.month}.csv`, toCsv(rows)); };
+
+// ---------- weekly payouts ----------
+function weekStatementRows(mon, n, r) { const rows = [[`Zemo Labs — weekly commission statement — ${n} — week of ${mon} (pay date ${payDay(mon)})`], [], ['Order #', 'Ordered', 'Client paid on', 'Client', 'Order total', 'Card fee', 'Rate', 'Commission']];
+  for (const x of r.orders) rows.push([x.num, x.date, x.datePaid, x.client, x.total.toFixed(2), x.square.toFixed(2), (r.rate * 100).toFixed(1) + '%', x.commission.toFixed(2)]);
+  rows.push([], ['Orders paid this week', r.orders.length], ['Sales', r.sales.toFixed(2)], ['Base commission', r.base.toFixed(2)]); if (r.bonus) rows.push([`Monthly tier bonus (${monthLabel(r.bonusMonth)})`, r.bonus.toFixed(2)]); rows.push(['TOTAL DUE', r.total.toFixed(2)]); return rows; }
+function renderPayouts() {
+  const weeks = weeksAvailable(); if (!S.payWeek || !weeks.includes(S.payWeek)) S.payWeek = weekStart(addDays(today(), -7));
+  $('payWeek').innerHTML = weeks.map(w => `<option value="${w}"${w === S.payWeek ? ' selected' : ''}>Week of ${weekLabel(w)} → pay Mon ${payDay(w)}</option>`).join('');
+  const ps = purchaseStats(); const sum = repWeekSummary(S.payWeek, ps); const reps = Object.entries(sum);
+  const due = reps.reduce((a, [, r]) => a + r.total, 0); const paid = reps.filter(([n]) => S.payouts.find(p => p.id === payoutId(S.payWeek, n) && p.paid)).reduce((a, [, r]) => a + r.total, 0);
+  const allOpen = S.payouts.length ? weeks.filter(w => w !== weekStart(today())).flatMap(w => Object.entries(repWeekSummary(w, ps)).filter(([n, r]) => r.total > 0 && !S.payouts.find(p => p.id === payoutId(w, n) && p.paid)).map(([n, r]) => r.total)).reduce((a, b) => a + b, 0) : weeks.filter(w => w !== weekStart(today())).flatMap(w => Object.values(repWeekSummary(w, ps)).map(r => r.total)).reduce((a, b) => a + b, 0);
+  $('payKpis').innerHTML = kpi('Pay date', payDay(S.payWeek)) + kpi('Due this week', fmt(due)) + kpi('Marked paid', fmt(paid), paid >= due && due > 0 ? 'good' : '') + kpi('Still owed (all weeks)', fmt(allOpen), allOpen ? 'bad' : 'good');
+  if (!reps.length) { $('payBody').innerHTML = `<div class="empty">No client payments landed for any rep in this week.</div>`; } else {
+    $('payBody').innerHTML = reps.map(([n, r]) => { const po = S.payouts.find(p => p.id === payoutId(S.payWeek, n));
+      return `<div class="card sec"><div class="card-h"><h3>${esc(n)}</h3><div class="row"><span class="num"><b>Due ${fmt(r.total)}</b></span><button class="btn sm wk-exp" data-rep="${esc(n)}">Export statement</button><label style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" class="wk-paid" data-rep="${esc(n)}"${po && po.paid ? ' checked' : ''}> Paid${po && po.paid ? ' · ' + esc(po.datePaid) + (po.method ? ' · ' + esc(po.method) : '') : ''}</label></div></div>
+        <div class="tbl"><table><thead><tr><th>Order #</th><th>Ordered</th><th>Client paid</th><th>Client</th><th class="r">Order total</th><th class="r">Card fee</th><th class="r">Commission (${pct(r.rate)})</th></tr></thead><tbody>` +
+        r.orders.map(x => `<tr><td class="num">${esc(x.num)}</td><td class="num">${esc(x.date)}</td><td class="num">${esc(x.datePaid)}</td><td>${esc(x.client)}</td><td class="r num">${fmt(x.total)}</td><td class="r num">${fmt(x.square)}</td><td class="r num">${fmt(x.commission)}</td></tr>`).join('') +
+        `</tbody><tfoot><tr><td colspan="4">${r.orders.length} orders paid</td><td class="r num">${fmt(r.sales)}</td><td class="r num">${fmt(r.sq)}</td><td class="r num">${fmt(r.base)}</td></tr>` + (r.bonus ? `<tr><td colspan="6">Monthly tier bonus — ${esc(monthLabel(r.bonusMonth))} target reached</td><td class="r num">${fmt(r.bonus)}</td></tr>` : '') + `<tr><td colspan="6"><b>Total due ${payDay(S.payWeek)}</b></td><td class="r num"><b>${fmt(r.total)}</b></td></tr></tfoot></table></div></div>`; }).join(''); }
+  const hist = S.payouts.filter(p => p.week).sort((a, b) => (b.week + b.rep).localeCompare(a.week + a.rep));
+  $('payHistory').innerHTML = hist.length ? `<table><thead><tr><th>Week</th><th>Pay date</th><th>Rep</th><th class="r">Amount</th><th>Status</th><th>Paid on</th></tr></thead><tbody>` + hist.map(p => `<tr><td class="num">${esc(weekLabel(p.week).replace(' (current)', ''))}</td><td class="num">${esc(payDay(p.week))}</td><td>${esc(p.rep)}</td><td class="r num">${fmt(p.amount)}</td><td><span class="chip ${p.paid ? 'good' : 'warn'}">${p.paid ? 'Paid' : 'Pending'}</span></td><td class="num">${esc(p.datePaid || '')}</td></tr>`).join('') + `</tbody></table>` : `<div class="empty">No payouts marked yet. Tick "Paid" above after you send the money each Monday.</div>`;
+}
+$('payWeek').onchange = e => { S.payWeek = e.target.value; renderPayouts(); };
+$('payBody').addEventListener('change', async e => { if (!e.target.classList.contains('wk-paid')) return; const n = e.target.dataset.rep; const r = repWeekSummary(S.payWeek, purchaseStats())[n];
+  await write('payouts', payoutId(S.payWeek, n), { week: S.payWeek, payDate: payDay(S.payWeek), rep: n, amount: r ? r.total : 0, paid: e.target.checked, datePaid: e.target.checked ? today() : '' }); toast(e.target.checked ? `Marked ${n} paid` : 'Unmarked'); });
+$('payBody').addEventListener('click', e => { if (!e.target.classList.contains('wk-exp')) return; const n = e.target.dataset.rep; const r = repWeekSummary(S.payWeek, purchaseStats())[n]; if (r) download(`zemo-payout-${slug(n)}-week-${S.payWeek}.csv`, toCsv(weekStatementRows(S.payWeek, n, r))); });
+
+// ---------- rep view ----------
+function renderRepView() {
+  if (!S.repView) return; const st = settings(); const repCfg = st.reps.find(r => slug(r.name) === S.repView);
+  if (!repCfg) { $('repviewTitle').textContent = 'Rep statement'; $('repviewBody').innerHTML = `<div class="empty">No rep matches this link.</div>`; return; }
+  const n = repCfg.name; $('repviewTitle').textContent = n + ' — commission statement'; renderRepWeek(n);
+  const months = monthsAvailable(); if (!S.repViewMonth || !months.includes(S.repViewMonth)) S.repViewMonth = months[0];
+  $('repviewMonth').innerHTML = months.map(m => `<option value="${m}"${m === S.repViewMonth ? ' selected' : ''}>${monthLabel(m)}</option>`).join('');
+  const locked = S.closes.find(c => c.id === S.repViewMonth); const d = locked ? locked.snapshot : closeData(S.repViewMonth); const r = d.reps[n]; const po = S.payouts.find(x => x.id === S.repViewMonth + '_' + slug(n));
+  if (!r) { $('repviewBody').innerHTML = `<div class="empty">No sales recorded for ${esc(monthLabel(S.repViewMonth))}.</div>`; return; }
+  const os = d.repOrders[n] || [];
+  $('repviewBody').innerHTML = `<div class="grid kpis">${kpi('Orders', r.n)}${kpi('Sales', fmt(r.sales))}${kpi('Rate', pct(r.rate))}${kpi('Base commission', fmt(r.base))}${r.threshold ? kpi('Tier bonus', fmt(r.bonus), r.bonusHit ? 'good' : '') : ''}${kpi('Total due', fmt(r.total), 'good')}${kpi('Status', po && po.paid ? 'Paid ' + (po.datePaid || '') : 'Pending')}</div>` +
+    (r.threshold && !r.bonusHit ? `<p class="note" style="margin-top:10px">${fmt(r.threshold - r.sales)} more in sales this month unlocks the ${pct(r.bonusRate)} rate on the whole month.</p>` : '') +
+    `<div class="card" style="margin-top:14px"><div class="tbl"><table><thead><tr><th>Order #</th><th>Date</th><th>Client</th><th class="r">Order total</th><th class="r">Square fee</th><th class="r">Commission</th><th>Client paid</th></tr></thead><tbody>` +
+    os.map(x => `<tr><td class="num">${esc(x.num)}</td><td class="num">${esc(x.date)}</td><td>${esc(x.client)}</td><td class="r num">${fmt(x.total)}</td><td class="r num">${fmt(x.square)}</td><td class="r num">${fmt(x.commission)}</td><td><span class="chip ${x.paid ? 'good' : 'bad'}">${x.paid ? 'Paid' : 'Unpaid'}</span></td></tr>`).join('') + `</tbody></table></div></div>`;
+}
+$('repviewMonth').onchange = e => { S.repViewMonth = e.target.value; renderRepView(); };
+function renderRepWeek(n) { const weeks = weeksAvailable(); if (!S.repViewWeek || !weeks.includes(S.repViewWeek)) S.repViewWeek = weekStart(addDays(today(), -7));
+  $('repviewWeek').innerHTML = weeks.map(w => `<option value="${w}"${w === S.repViewWeek ? ' selected' : ''}>Week of ${weekLabel(w)} → paid Mon ${payDay(w)}</option>`).join('');
+  const r = repWeekSummary(S.repViewWeek, purchaseStats())[n]; const po = S.payouts.find(p => p.id === payoutId(S.repViewWeek, n));
+  if (!r) { $('repviewWeekBody').innerHTML = `<div class="empty">No client payments for you in this week.</div>`; return; }
+  $('repviewWeekBody').innerHTML = `<div class="grid kpis">${kpi('Orders paid', r.orders.length)}${kpi('Sales', fmt(r.sales))}${kpi('Commission', fmt(r.base))}${r.bonus ? kpi('Tier bonus', fmt(r.bonus), 'good') : ''}${kpi('Due ' + payDay(S.repViewWeek), fmt(r.total), 'good')}${kpi('Status', po && po.paid ? 'Paid ' + (po.datePaid || '') : 'Pending')}</div>
+    <div class="tbl" style="margin-top:10px"><table><thead><tr><th>Order #</th><th>Client paid</th><th>Client</th><th class="r">Order total</th><th class="r">Commission</th></tr></thead><tbody>` + r.orders.map(x => `<tr><td class="num">${esc(x.num)}</td><td class="num">${esc(x.datePaid)}</td><td>${esc(x.client)}</td><td class="r num">${fmt(x.total)}</td><td class="r num">${fmt(x.commission)}</td></tr>`).join('') + `</tbody></table></div>`; }
+$('repviewWeek').onchange = e => { S.repViewWeek = e.target.value; renderRepView(); };
+$('repviewExport').onclick = () => { const st = settings(); const repCfg = st.reps.find(r => slug(r.name) === S.repView); if (repCfg) exportRepStatement(S.repViewMonth, repCfg.name); };
+
+// ---------- persistence ----------
+async function write(col, id, data) {
+  if (S.db) { try { await S.db.collection(col).doc(id).set(data); return true; } catch (e) { if (e && e.code === 'invalid_argument' && S.canWrite !== true) { setReadOnly(); toast('You have view-only access'); } else toast('Save failed: ' + (e.message || e.code || 'unknown')); return false; } }
+  // local fallback (not shared)
+  applyLocal(col, id, data); renderAll(); return true;
+}
+async function remove(col, id) { if (S.db) { try { await S.db.collection(col).doc(id).delete(); return true; } catch (e) { toast('Delete failed: ' + (e.message || e.code)); return false; } } applyLocal(col, id, null); renderAll(); return true; }
+function applyLocal(col, id, data) { if (col === 'settings') { S.settings = data; return; } const arr = S[col]; const i = arr.findIndex(x => x.id === id); if (data) { data.id = id; if (i >= 0) arr[i] = data; else arr.push(data); } else if (i >= 0) arr.splice(i, 1); }
+function setReadOnly() { S.canWrite = false; document.querySelectorAll('.btn.primary, #addLine, #addProduct, #addClient').forEach(b => b.disabled = true); $('statusText').textContent = 'View only'; }
+let renderQueued = false;
+function renderAll() { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; renderDash(); renderOrders(); renderInventory(); renderPurchases(); renderSettings(); renderPriceLog(); renderReceivables(); renderPayouts(); renderClose(); renderRepView(); if (!S.editingId) { const st = settings(); if ($('oRep').options.length <= 1) resetOrderForm(); } renderLines(); }); }
+
+function localAdapter() {
+  const listeners = {}; const cache = {};
+  async function api(method, path, body) { const r = await fetch('/api/' + path, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }); if (!r.ok) throw { code: 'unavailable', message: await r.text() }; return r.status === 204 ? null : r.json(); }
+  async function refresh(col) { try { const docs = await api('GET', col); const key = JSON.stringify(docs); if (cache[col] === key) return; cache[col] = key; (listeners[col] || []).forEach(fn => fn(docs)); } catch (e) { $('statusText').textContent = 'Server unreachable: is server.js running?'; $('dot').classList.remove('on'); } }
+  setInterval(() => Object.keys(listeners).forEach(refresh), 3000);
+  const sub = (col, fn) => { (listeners[col] = listeners[col] || []).push(fn); refresh(col); return () => {}; };
+  const docRef = (col, id) => ({ set: async d => { await api('PUT', col + '/' + id, d); await refresh(col); }, delete: async () => { await api('DELETE', col + '/' + id); await refresh(col); } });
+  return {
+    doc(path) { const [col, id] = path.split('/'); return Object.assign(docRef(col, id), { onSnapshot: fn => sub(col, docs => { const d = docs.find(x => x.id === id); fn({ exists: !!d, data: () => d }); }) }); },
+    collection(col) { return { doc: id => docRef(col, id), onSnapshot: fn => sub(col, docs => fn({ docs: docs.map(d => ({ id: d.id, data: () => d })) })) }; }
+  };
+}
+const localDownloads = { save: async ({ filename, data }) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'text/csv' })); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); } };
+async function boot() {
+  const hm = (location.hash || '').match(/^#rep-([a-z0-9-]+)$/); if (hm) { S.repView = hm[1]; document.body.classList.add('repmode'); }
+  resetOrderForm(); renderAll();
+  try { const t = localStorage.getItem('zemo.tab'); if (t && !S.repView) showTab(t); } catch (e) {}
+  let db = null, user = null; const claude = window.claude; let meLocal = null;
+  if (claude && claude.use) { const r = await Promise.all([claude.use('db'), claude.use('user'), claude.use('downloads')]); db = r[0]; user = r[1]; S.downloads = r[2]; if (!db) { $('statusText').textContent = 'Sign in to load shared data'; return; } }
+  else { try { const r = await fetch('/api/me'); if (r.status === 401) { location.href = '/login'; return; } if (!r.ok) throw 0; meLocal = await r.json(); db = localAdapter(); S.downloads = localDownloads; } catch (e) { $('statusText').textContent = 'Offline demo: nothing is saved'; return; } }
+  S.db = db; $('dot').classList.add('on'); $('statusText').textContent = claude ? 'Live · shared' : (meLocal ? meLocal.name + ' (' + meLocal.role + ')' : 'Local server');
+  if (meLocal) { $('acct').hidden = false; $('acctUsers').hidden = meLocal.role !== 'owner';
+    if (meLocal.role === 'rep') { S.repView = slug(meLocal.rep); document.body.classList.add('repmode'); }
+    if (meLocal.role === 'staff') { S.canWrite = true; document.querySelectorAll('#panel-settings .card').forEach((c, i) => { if (i < 3) c.classList.add('ro'); }); const n = document.createElement('p'); n.className = 'note'; n.textContent = 'Pricing, fees, shipping rates and commission are owner-only. You can add clients and enter orders.'; document.getElementById('panel-settings').prepend(n); document.querySelectorAll('#lockMonth').forEach(b => b.disabled = true); } }
+  if (user) { try { S.canWrite = await user.can('data.write'); if (S.canWrite === false) setReadOnly(); const admin = await user.canEdit(); if (admin === false) { document.querySelectorAll('#panel-settings .card').forEach((c, i) => { if (i < 3) c.classList.add('ro'); }); const n = document.createElement('p'); n.className = 'note'; n.textContent = 'Pricing, fees, shipping rates and commission are locked to the owner. You can still add clients and enter orders.'; document.getElementById('panel-settings').prepend(n); } } catch (e) {} }
+  const onErr = e => { $('statusText').textContent = 'Connection issue: ' + (e.code || ''); $('dot').classList.remove('on'); };
+  db.doc('settings/main').onSnapshot(s => { S.settings = s.exists ? s.data() : null; renderAll(); }, onErr);
+  for (const col of ['products', 'clients', 'orders', 'purchases', 'priceHistory', 'payouts', 'closes']) db.collection(col).onSnapshot(q => { S[col] = q.docs.map(d => Object.assign({ id: d.id }, d.data())); renderAll(); }, onErr);
+}
+boot();
+})();
+</script>
+
+</body></html>
