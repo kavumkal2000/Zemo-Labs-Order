@@ -63,6 +63,11 @@ Runs on port 8080 (set `PORT` to change). Make it start on boot with Task Schedu
 - **Updates:** when Claude gives you a new `index.html` / `server.js`, replace the files and redeploy (Render redeploys automatically on git push). Data is untouched.
 - **Password reset:** owner can remove and re-add a user; the owner's own password is changed on the Users page. If the owner is locked out, delete `users.json` on the disk and the setup screen returns (data is not affected).
 
+## Letting Claude read the site (optional)
+
+Render → your service → **Environment** → Add variable `REPORT_TOKEN` = a long random string (e.g. 32+ characters). Save (the service restarts).
+Give that value to Claude. With it, Claude can **read** orders, payouts and inventory (to answer questions and send the morning brief) but can never write or sign in as a user.
+
 ## Security notes
 
 - Passwords are hashed (scrypt). Sessions are signed cookies (30 days). Login is rate-limited (10 tries / 15 min per IP).

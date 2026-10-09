@@ -81,7 +81,11 @@ function canWrite(user, col) { if (user.role === 'owner') return true; if (user.
 
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x'); const p = url.pathname; const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  const me = readToken(cookies(req).zemo_session);
+  // Read-only report access: set REPORT_TOKEN in the environment, then GET /api/* with header  Authorization: Bearer <token>
+  const auth = req.headers.authorization || '';
+  const reportToken = process.env.REPORT_TOKEN;
+  const isReport = reportToken && auth === 'Bearer ' + reportToken && req.method === 'GET' && p.startsWith('/api/');
+  const me = isReport ? { name: 'Report', username: '_report', role: 'owner', readOnly: true } : readToken(cookies(req).zemo_session);
   if (!users.length) { // first run
     if (p === '/setup' && req.method === 'POST') { const f = form(await body(req)); if (!f.username || (f.password || '').length < 12) return html(res, 400, setupPage('Password must be at least 12 characters.')); users.push({ name: f.name || f.username, username: f.username.trim().toLowerCase(), role: 'owner', hash: hash(f.password) }); saveUsers(); return redirect(res, '/', { 'Set-Cookie': cookie(req, makeToken(users[0]), SESSION_DAYS * 86400) }); }
     return html(res, 200, setupPage());
@@ -105,7 +109,7 @@ http.createServer(async (req, res) => {
     if (col === 'me') return json(res, 200, { name: me.name, username: me.username, role: me.role, rep: me.rep || null, canWriteSettings: me.role === 'owner' });
     if (!COLS.includes(col)) return json(res, 404, { error: 'unknown collection' });
     if (req.method === 'GET') return json(res, 200, viewFor(me, col, db[col]));
-    if (!canWrite(me, col)) return json(res, 403, { error: 'not allowed for your role' });
+    if (me.readOnly || !canWrite(me, col)) return json(res, 403, { error: 'not allowed for your role' });
     if (!id) return json(res, 400, { error: 'id required' });
     const b = await body(req); const i = db[col].findIndex(d => d.id === id);
     if (req.method === 'DELETE') { if (i >= 0) db[col].splice(i, 1); save(); return json(res, 204); }
