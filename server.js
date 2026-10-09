@@ -70,8 +70,8 @@ function usersPage(me, err) {
 // ---- data views per role ----
 function viewFor(user, col, docs) {
   if (user.role !== 'rep') return docs;
-  if (col === 'orders') return docs.filter(o => o.rep === user.rep);
-  if (col === 'settings') return docs.map(s => Object.assign({}, s, { reps: (s.reps || []).filter(r => r.name === user.rep), shipping: [], paymentMethods: [] }));
+  if (col === 'orders') return docs.filter(o => o.rep === user.rep).map(o => ({ id: o.id, num: o.num, date: o.date, datePaid: o.datePaid, paid: !!o.paid, client: o.client, rep: o.rep, payment: o.payment, shippingType: o.shippingType, shippingCharge: o.shippingCharge, discountAmt: o.discountAmt, discountPct: o.discountPct, feeWaived: !!o.feeWaived, lines: (o.lines || []).map(l => ({ product: l.product, qty: l.qty, unitPrice: l.unitPrice, promo: l.promo })) })); // no costs, notes, provider, tracking, carrier cost
+  if (col === 'settings') return docs.map(s => ({ id: s.id, squareFeePct: s.squareFeePct, deductSquareFromCommission: s.deductSquareFromCommission, revenueBasis: s.revenueBasis, reps: (s.reps || []).filter(r => r.name === user.rep), shipping: (s.shipping || []).map(x => ({ name: x.name, charge: x.charge, cost: 0 })), paymentMethods: [] }));
   if (col === 'products') return docs.map(p => ({ id: p.id, name: p.name, order: p.order }));
   if (col === 'payouts') return docs.filter(p => p.rep === user.rep);
   if (col === 'closes') return docs.map(c => ({ id: c.id, closedAt: c.closedAt, snapshot: { month: c.snapshot.month, pnl: {}, reps: Object.fromEntries(Object.entries(c.snapshot.reps || {}).filter(([n]) => n === user.rep)), repOrders: Object.fromEntries(Object.entries(c.snapshot.repOrders || {}).filter(([n]) => n === user.rep)), inv: [], invTotal: 0, recv: [], recvTotal: 0, purchases: 0 } }));
