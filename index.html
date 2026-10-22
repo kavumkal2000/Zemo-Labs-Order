@@ -107,6 +107,17 @@ input.edit{background:var(--yellow)}
 body.repmode .tabs, body.repmode .panel{display:none}
 body.repmode #panel-repview{display:block}
 .copybtn{white-space:nowrap}
+.slip{max-width:760px;margin:0 auto;background:#fff;color:#15202b;padding:36px 40px;border:1px solid var(--line);border-radius:12px;font-family:var(--body)}
+.slip h1{font-size:1.5rem;letter-spacing:.02em}.slip .brand{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2px solid #0f6b6e;padding-bottom:14px;margin-bottom:18px}
+.slip .meta{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;font-size:.92rem}.slip .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:#5b6b7a}
+.slip table{width:100%;border-collapse:collapse;font-size:.92rem}.slip th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:#5b6b7a;border-bottom:1px solid #d3dae1;padding:6px 4px}.slip td{padding:7px 4px;border-bottom:1px solid #eef1f4}.slip .r{text-align:right;font-family:var(--mono)}
+.slip .totals{margin-left:auto;width:300px;margin-top:12px}.slip .totals div{display:flex;justify-content:space-between;padding:3px 0}.slip .totals .big{border-top:2px solid #15202b;margin-top:6px;padding-top:8px;font-weight:700;font-size:1.05rem}
+.slip .ruo{margin-top:22px;padding:10px 12px;border:1px solid #0f6b6e;border-radius:8px;font-size:.82rem;color:#0f6b6e;font-weight:600}.slip .foot{margin-top:14px;font-size:.78rem;color:#5b6b7a}
+.slip .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:700;letter-spacing:.04em}
+.slipbar{display:flex;gap:8px;justify-content:center;margin:0 auto 14px;max-width:760px;flex-wrap:wrap}
+body.slipmode .top, body.slipmode .panel{display:none!important} body.slipmode #panel-slip{display:block!important}
+@media print{body{background:#fff}.top,.slipbar,.tabs{display:none!important}.slip{border:0;border-radius:0;padding:0;max-width:none}main{padding:0;max-width:none}}
+.req{border-left:4px solid var(--warn);padding-left:12px}
 </style>
 
 <header class="top"><div class="top-in">
@@ -115,6 +126,7 @@ body.repmode #panel-repview{display:block}
     <button class="tab" role="tab" data-tab="dash" aria-selected="true">Dashboard</button>
     <button class="tab" role="tab" data-tab="new">New Order</button>
     <button class="tab" role="tab" data-tab="orders">Orders</button>
+    <button class="tab" role="tab" data-tab="requests">Requests <span class="chip warn" id="reqBadge" hidden>0</span></button>
     <button class="tab" role="tab" data-tab="inv">Inventory</button>
     <button class="tab" role="tab" data-tab="purch">Purchases</button>
     <button class="tab" role="tab" data-tab="recv">Receivables</button>
@@ -174,6 +186,7 @@ body.repmode #panel-repview{display:block}
       <div class="row" style="margin-top:16px">
         <button class="btn primary" id="saveOrder">Save order</button>
         <button class="btn" id="resetOrder">Clear</button>
+        <button class="btn" id="openSlipBtn" hidden>Invoice / packing slip</button>
         <span class="note" id="saveMsg"></span>
       </div>
     </div>
@@ -198,6 +211,19 @@ body.repmode #panel-repview{display:block}
   </div>
   <div class="grid kpis" id="ordersKpis" style="margin-bottom:14px"></div>
   <div class="card"><div class="tbl" id="ordersTable"></div></div>
+</section>
+
+<!-- ORDER REQUESTS (from the public clinic page) -->
+<section class="panel" id="panel-requests">
+  <div class="card-h"><h2>Order requests</h2><span class="note">Submitted by clinics on the public ordering page. Approve to turn into a real order; nothing touches inventory until then.</span></div>
+  <div id="reqList"></div>
+  <div class="card" style="margin-top:14px"><div class="card-h"><h3>Handled</h3></div><div class="tbl" id="reqDone"></div></div>
+</section>
+
+<!-- PACKING SLIP / INVOICE -->
+<section class="panel" id="panel-slip">
+  <div class="slipbar"><button class="btn" id="slipBack">← Back to orders</button><button class="btn" id="slipMode">Show as packing slip</button><button class="btn primary" id="slipPrint">Print / Save PDF</button><button class="btn" id="slipCopy">Copy invoice text</button></div>
+  <div id="slipBody"></div>
 </section>
 
 <!-- INVENTORY -->
@@ -266,11 +292,13 @@ body.repmode #panel-repview{display:block}
       <div class="form-grid" style="margin-top:10px">
         <div class="field"><label for="sSquare">Card processing fee % (added to product + shipping on Square orders, passed through to Square)</label><input type="number" step="0.1" id="sSquare" class="edit"></div>
         <div class="field"><label for="sPack">Packaging fallback ($/shipment)</label><input type="number" step="0.01" id="sPack" class="edit"></div>
+        <div class="field"><label for="sPortal">Clinic ordering page</label><select id="sPortal" class="edit"><option value="on">On — clinics can submit at /order</option><option value="off">Off — page shows "paused"</option></select></div>
         <div class="field"><label for="sBasis">Revenue counts on</label><select id="sBasis" class="edit"><option value="paid">Date paid (cash basis)</option><option value="order">Order date</option></select></div>
         <div class="field"><label for="sDeduct">Commission base</label><select id="sDeduct" class="edit"><option value="yes">Product + shipping (excludes card fee)</option><option value="no">Full invoice total incl. card fee</option></select></div>
       </div>
       <h3 style="margin-top:16px">Sales reps</h3>
       <div class="tbl" id="repsEdit"></div>
+      <p class="note">Clinic ordering link: <code id="portalLink"></code> <button class="btn sm" id="portalCopy" type="button">Copy</button> — send this to clinics. Requests land in the Requests tab for approval.</p>
       <p class="note">Reps are paid every Monday for the prior Mon–Sun (by the date the client paid) — see the Rep Payouts tab. Monthly tier bonuses are paid with the week that contains the month's last day.</p>
       <p class="note">Rep statement links: add <code>#rep-caitlyn</code> (lower-case name, spaces as dashes) to the end of this page's link. That view shows only that rep's own sales and commission. The person still needs access to this page.</p>
       <h3 style="margin-top:16px">Payment methods</h3>
@@ -304,7 +332,7 @@ body.repmode #panel-repview{display:block}
 (() => {
 'use strict';
 // ---------- state ----------
-const S = { settings: null, products: [], clients: [], orders: [], purchases: [], priceHistory: [], payouts: [], closes: [], closeMonth: null, payWeek: null, repViewWeek: null, repView: null, repViewMonth: null, db: null, canWrite: null, downloads: null, editingId: null, dashMonth: null, ordersMonth: 'all' };
+const S = { settings: null, products: [], clients: [], orders: [], purchases: [], priceHistory: [], payouts: [], closes: [], requests: [], slipOrderId: null, slipKind: 'invoice', closeMonth: null, payWeek: null, repViewWeek: null, repView: null, repViewMonth: null, db: null, canWrite: null, downloads: null, editingId: null, dashMonth: null, ordersMonth: 'all' };
 const DEFAULTS = { squareFeePct: 0.05, deductSquareFromCommission: true, packagingFallback: 3, chaseDays: 14, revenueBasis: 'paid', shipping: [], reps: [], paymentMethods: ['Zelle','ACH','Square','Cash/Other'] };
 const $ = id => document.getElementById(id);
 const fmt = n => (n == null || isNaN(n)) ? '—' : n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
@@ -473,14 +501,14 @@ $('oShipType').addEventListener('change', () => { const row = settings().shippin
 $('oClient').addEventListener('change', () => { const c = S.clients.find(x => x.name === $('oClient').value); if (!c) return; if (c.defaultShipping && !$('oShipType').value) { $('oShipType').value = c.defaultShipping; $('oShipType').dispatchEvent(new Event('change')); } if (c.defaultRep && !S.editingId) { $('oRep').value = c.defaultRep; renderOrderTotals(); } });
 $('oPaid').addEventListener('change', () => { if ($('oPaid').checked && !$('oDatePaid').value) $('oDatePaid').value = today(); renderOrderTotals(); });
 function resetOrderForm() {
-  S.editingId = null; $('orderFormTitle').textContent = 'New order';
+  S.editingId = null; $('orderFormTitle').textContent = 'New order'; $('openSlipBtn').hidden = true;
   $('oDate').value = today(); $('oClient').value = ''; $('oProvider').value = ''; $('oShipCharge').value = ''; $('oShipCost').value = ''; $('oTracking').value = ''; $('oDatePaid').value = ''; $('oNotes').value = '';
   $('oShipped').checked = false; $('oPaid').checked = false; $('oFeeWaived').checked = false; $('oDiscAmt').value = ''; $('oDiscPct').value = ''; $('saveMsg').textContent = '';
   const st = settings(); fillSelect($('oRep'), st.reps.map(r => r.name), st.reps[0]?.name, 'No rep'); fillSelect($('oShipType'), st.shipping.map(s => s.name), '', 'Select…'); fillSelect($('oPayment'), st.paymentMethods, 'Square');
   formLines = [{ product: '', qty: 1, unitPrice: null, promo: '' }]; renderLines();
 }
 function loadOrderIntoForm(o) {
-  S.editingId = o.id; $('orderFormTitle').textContent = 'Edit order ' + o.num; const st = settings();
+  S.editingId = o.id; $('orderFormTitle').textContent = 'Edit order ' + o.num; const st = settings(); $('openSlipBtn').hidden = false;
   fillSelect($('oRep'), st.reps.map(r => r.name), o.rep, 'No rep'); fillSelect($('oShipType'), st.shipping.map(s => s.name), o.shippingType, 'Select…'); fillSelect($('oPayment'), st.paymentMethods, o.payment);
   $('oDate').value = o.date; $('oClient').value = o.client || ''; $('oProvider').value = o.provider || ''; $('oShipCharge').value = o.shippingCharge ?? ''; $('oShipCost').value = o.shippingCost ?? '';
   $('oTracking').value = o.tracking || ''; $('oDatePaid').value = o.datePaid || ''; $('oShipped').checked = !!o.shipped; $('oPaid').checked = !!o.paid; $('oFeeWaived').checked = !!o.feeWaived; $('oDiscAmt').value = o.discountAmt || ''; $('oDiscPct').value = o.discountPct || ''; $('oNotes').value = o.notes || '';
@@ -521,12 +549,13 @@ function renderOrders() {
         <td><button class="chip ${o.shipped ? 'good' : 'warn'} tog" data-k="shipped" style="border:0;cursor:pointer">${o.shipped ? 'Shipped' : 'Unshipped'}</button></td>
         <td><button class="chip ${o.paid ? 'good' : 'bad'} tog" data-k="paid" style="border:0;cursor:pointer">${o.paid ? 'Paid' : 'Unpaid'}</button></td>
         <td class="num">${days === '' ? '' : days + 'd'}</td>
-        <td>${pendingDelete === o.id ? `<span class="confirm"><button class="btn sm danger del-yes">Delete</button><button class="btn sm del-no">Keep</button></span>` : `<button class="btn sm del" aria-label="Delete order">🗑</button>`}</td></tr>`;
+        <td style="white-space:nowrap"><button class="btn sm slip" title="Invoice / packing slip">🧾</button> ${pendingDelete === o.id ? `<span class="confirm"><button class="btn sm danger del-yes">Delete</button><button class="btn sm del-no">Keep</button></span>` : `<button class="btn sm del" aria-label="Delete order">🗑</button>`}</td></tr>`;
     }).join('') + `</tbody></table>`;
 }
 $('ordersTable').addEventListener('click', async e => {
   const tr = e.target.closest('tr[data-id]'); if (!tr) return; const o = S.orders.find(x => x.id === tr.dataset.id); if (!o) return;
   if (e.target.classList.contains('tog')) { const k = e.target.dataset.k; const upd = { [k]: !o[k], updatedAt: new Date().toISOString() }; if (k === 'paid' && !o.paid && !o.datePaid) upd.datePaid = today(); await write('orders', o.id, Object.assign({}, o, upd)); return; }
+  if (e.target.classList.contains('slip')) { openSlip(o.id); return; }
   if (e.target.classList.contains('del')) { pendingDelete = o.id; renderOrders(); return; }
   if (e.target.classList.contains('del-no')) { pendingDelete = null; renderOrders(); return; }
   if (e.target.classList.contains('del-yes')) { pendingDelete = null; await remove('orders', o.id); toast('Deleted ' + o.num); return; }
@@ -618,7 +647,7 @@ let settingsDirty = false;
 function renderSettings() {
   const st = settings();
   if (!settingsDirty) {
-    $('sSquare').value = ((+st.squareFeePct || 0) * 100).toFixed(1); $('sPack').value = st.packagingFallback; $('sDeduct').value = st.deductSquareFromCommission ? 'yes' : 'no'; $('sBasis').value = st.revenueBasis || 'paid'; $('sPayments').value = (st.paymentMethods || []).join(', ');
+    $('sSquare').value = ((+st.squareFeePct || 0) * 100).toFixed(1); $('sPack').value = st.packagingFallback; $('sDeduct').value = st.deductSquareFromCommission ? 'yes' : 'no'; $('sBasis').value = st.revenueBasis || 'paid'; $('sPortal').value = st.clinicPortal === false ? 'off' : 'on'; $('portalLink').textContent = location.origin + '/order'; $('sPayments').value = (st.paymentMethods || []).join(', ');
     $('repsEdit').innerHTML = `<table><thead><tr><th>Rep</th><th class="r">Base rate %</th><th class="r">Bonus threshold ($/mo)</th><th class="r">Bonus rate %</th><th></th></tr></thead><tbody>` + st.reps.map((r, i) => `<tr><td><input class="edit rep-n" data-i="${i}" value="${esc(r.name)}"></td><td><input class="edit rep-r num" data-i="${i}" type="number" step="0.5" value="${((+r.rate || 0) * 100).toFixed(1)}" style="width:80px"></td><td><input class="edit rep-t num" data-i="${i}" type="number" step="1000" value="${r.bonusThreshold ?? ''}" placeholder="none" style="width:110px"></td><td><input class="edit rep-b num" data-i="${i}" type="number" step="0.5" value="${r.bonusRate != null ? (r.bonusRate * 100).toFixed(1) : ''}" style="width:80px"></td><td><button class="btn sm rep-del" data-i="${i}">×</button></td></tr>`).join('') + `<tr><td colspan="5"><button class="btn sm" id="repAdd">+ Add rep</button></td></tr></tbody></table>`;
     $('shipEdit').innerHTML = `<table><thead><tr><th>Shipping type</th><th class="r">Charge to client</th><th class="r">Our est. cost</th><th></th></tr></thead><tbody>` + st.shipping.map((s, i) => `<tr><td><input class="edit sh-n" data-i="${i}" value="${esc(s.name)}"></td><td><input class="edit sh-c num" data-i="${i}" type="number" step="0.01" value="${s.charge}" style="width:100px"></td><td><input class="edit sh-k num" data-i="${i}" type="number" step="0.01" value="${s.cost}" style="width:100px"></td><td><button class="btn sm sh-del" data-i="${i}">×</button></td></tr>`).join('') + `<tr><td colspan="4"><button class="btn sm" id="shAdd">+ Add shipping type</button></td></tr></tbody></table>`;
   }
@@ -630,13 +659,13 @@ function renderSettings() {
     cls.map(c => `<tr data-id="${c.id}"><td><input class="edit ce" data-k="name" value="${esc(c.name)}" style="min-width:200px"></td><td><input class="edit ce" data-k="state" value="${esc(c.state)}" style="width:60px"></td><td><input class="edit ce" data-k="contact" value="${esc(c.contact)}"></td><td><input class="edit ce" data-k="email" value="${esc(c.email)}"></td><td><input class="edit ce" data-k="phone" value="${esc(c.phone)}" style="width:130px"></td><td><select class="edit ce" data-k="defaultShipping"><option value="">—</option>${st.shipping.map(s => `<option${s.name === c.defaultShipping ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}</select></td><td><select class="edit ce" data-k="defaultRep"><option value="">—</option>${st.reps.map(r => `<option${r.name === c.defaultRep ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select></td><td><input class="edit ce" data-k="notes" value="${esc(c.notes)}"></td><td><button class="btn sm ce-del" aria-label="Remove client">×</button></td></tr>`).join('') + `</tbody></table>` : `<div class="empty">No clients yet.</div>`;
   $('clientList').innerHTML = cls.map(c => `<option value="${esc(c.name)}">`).join('');
 }
-['sSquare','sPack','sDeduct','sBasis','sPayments'].forEach(id => $(id).addEventListener('input', () => settingsDirty = true));
+['sSquare','sPack','sDeduct','sBasis','sPortal','sPayments'].forEach(id => $(id).addEventListener('input', () => settingsDirty = true));
 $('repsEdit').addEventListener('input', () => settingsDirty = true); $('shipEdit').addEventListener('input', () => settingsDirty = true);
 function readSettingsForm() {
   const st = settings();
   const reps = [...$('repsEdit').querySelectorAll('tr[data-i], tbody tr')].filter(tr => tr.querySelector('.rep-n')).map(tr => ({ name: tr.querySelector('.rep-n').value.trim(), rate: (+tr.querySelector('.rep-r').value || 0) / 100, bonusThreshold: +tr.querySelector('.rep-t').value || null, bonusRate: tr.querySelector('.rep-b').value === '' ? null : (+tr.querySelector('.rep-b').value) / 100 })).filter(r => r.name);
   const shipping = [...$('shipEdit').querySelectorAll('tbody tr')].filter(tr => tr.querySelector('.sh-n')).map(tr => ({ name: tr.querySelector('.sh-n').value.trim(), charge: +tr.querySelector('.sh-c').value || 0, cost: +tr.querySelector('.sh-k').value || 0 })).filter(s => s.name);
-  return Object.assign({}, st, { squareFeePct: (+$('sSquare').value || 0) / 100, packagingFallback: +$('sPack').value || 0, deductSquareFromCommission: $('sDeduct').value === 'yes', revenueBasis: $('sBasis').value, paymentMethods: $('sPayments').value.split(',').map(s => s.trim()).filter(Boolean), reps, shipping });
+  return Object.assign({}, st, { squareFeePct: (+$('sSquare').value || 0) / 100, packagingFallback: +$('sPack').value || 0, deductSquareFromCommission: $('sDeduct').value === 'yes', revenueBasis: $('sBasis').value, clinicPortal: $('sPortal').value !== 'off', paymentMethods: $('sPayments').value.split(',').map(s => s.trim()).filter(Boolean), reps, shipping });
 }
 $('saveSettings').onclick = async () => { const st = readSettingsForm(); if (await write('settings', 'main', st)) { settingsDirty = false; toast('Settings saved'); } };
 document.addEventListener('click', e => {
@@ -810,6 +839,60 @@ $('repviewExport').onclick = () => { const st = settings(); const repCfg = st.re
   rows.push([], ['Sales', r.sales.toFixed(2)], ['Rate', (r.rate * 100).toFixed(1) + '%'], ['Commission', r.base.toFixed(2)]); if (r.threshold) rows.push(['Tier bonus', r.bonus.toFixed(2)]); rows.push(['TOTAL COMMISSION', r.total.toFixed(2)]);
   download(`zemo-statement-${slug(n)}-${S.repViewMonth}.csv`, toCsv(rows)); };
 
+// ---------- packing slip / invoice ----------
+const ZEMO = { name: 'Zemo Labs', addr: '8606 Hunters Village Rd #218, Tampa, FL 33647', email: 'jeff@metromedsrx.com', phone: '813-382-8747' };
+function openSlip(id) { S.slipOrderId = id; document.body.classList.add('slipmode'); renderSlip(); window.scrollTo({ top: 0 }); }
+function closeSlip() { document.body.classList.remove('slipmode'); S.slipOrderId = null; }
+$('slipBack').onclick = closeSlip; $('openSlipBtn').onclick = () => { if (S.editingId) openSlip(S.editingId); };
+$('slipMode').onclick = () => { S.slipKind = S.slipKind === 'invoice' ? 'packing' : 'invoice'; renderSlip(); };
+$('slipPrint').onclick = () => { if (typeof window.print === 'function') { try { window.print(); } catch (e) {} } toast('If no print dialog opened, use your browser menu: Print, then Save as PDF'); };
+$('slipCopy').onclick = () => copyText($('slipBody').innerText, $('slipCopy'));
+function renderSlip() {
+  if (!S.slipOrderId) return; const o = S.orders.find(x => x.id === S.slipOrderId); if (!o) { $('slipBody').innerHTML = `<div class="empty">Order not found.</div>`; return; }
+  const c = calcOrder(o, purchaseStats()); const cl = S.clients.find(x => x.name === o.client) || {}; const inv = S.slipKind === 'invoice'; const st = settings();
+  $('slipMode').textContent = inv ? 'Show as packing slip' : 'Show as invoice';
+  const dateFmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+  $('slipBody').innerHTML = `<div class="slip">
+    <div class="brand"><div><h1>${esc(ZEMO.name)}</h1><div class="note" style="color:#5b6b7a">${esc(ZEMO.addr)}<br>${esc(ZEMO.email)} · ${esc(ZEMO.phone)}</div></div>
+      <div style="text-align:right"><div class="k">${inv ? 'Invoice' : 'Packing slip'}</div><div style="font-family:var(--mono);font-size:1.3rem;font-weight:700">${esc(o.num)}</div><div class="note" style="color:#5b6b7a">${esc(dateFmt(o.date))}</div>${inv ? `<div style="margin-top:6px"><span class="badge" style="background:${o.paid ? '#dcf1e2;color:#1f7a3d' : '#fbead0;color:#9a5b00'}">${o.paid ? 'PAID ' + esc(dateFmt(o.datePaid)) : 'DUE ON RECEIPT'}</span></div>` : ''}</div></div>
+    <div class="meta"><div><div class="k">${inv ? 'Bill to' : 'Ship to'}</div><div><b>${esc(o.client)}</b></div>${cl.contact ? `<div>${esc(cl.contact)}</div>` : ''}${o.provider ? `<div>${esc(o.provider)}</div>` : ''}${cl.email ? `<div>${esc(cl.email)}</div>` : ''}${cl.phone ? `<div>${esc(cl.phone)}</div>` : ''}</div>
+      <div><div class="k">Shipping</div><div>${esc(o.shippingType || '')}</div>${o.tracking ? `<div class="k" style="margin-top:6px">Tracking</div><div style="font-family:var(--mono)">${esc(o.tracking)}</div>` : ''}${inv && o.payment ? `<div class="k" style="margin-top:6px">Payment</div><div>${esc(o.payment)}</div>` : ''}${o.rep ? `<div class="k" style="margin-top:6px">Account rep</div><div>${esc(o.rep)}</div>` : ''}</div></div>
+    <table><thead><tr><th style="width:52%">Item</th><th class="r">Qty</th>${inv ? '<th class="r">Unit price</th><th class="r">Amount</th>' : '<th>Packed</th>'}</tr></thead><tbody>` +
+    c.lines.map(l => `<tr><td>${esc(l.product)}<div class="note" style="color:#5b6b7a;font-size:.75rem">Research use only · lyophilized unless noted</div></td><td class="r">${l.qty}</td>${inv ? `<td class="r">${fmt(l.unitPriceUsed)}${l.promo ? `<div class="note" style="color:#5b6b7a;font-size:.72rem">${l.promo}% off</div>` : ''}</td><td class="r">${fmt(l.total)}</td>` : '<td>☐</td>'}</tr>`).join('') + `</tbody></table>` +
+    (inv ? `<div class="totals"><div><span>Products</span><span class="r">${fmt(c.productSales)}</span></div>${c.discount ? `<div><span>Discount</span><span class="r">−${fmt(c.discount)}</span></div>` : ''}<div><span>Shipping</span><span class="r">${fmt(c.shipCharge)}</span></div>${c.square ? `<div><span>Card processing (${pct(st.squareFeePct)})</span><span class="r">${fmt(c.square)}</span></div>` : ''}<div class="big"><span>Total</span><span class="r">${fmt(c.total)}</span></div>${!o.paid ? `<div class="note" style="margin-top:8px;color:#5b6b7a">Pay by Zelle or ACH to avoid the card processing fee — contact us for details.</div>` : ''}</div>` : `<div class="totals"><div><span>Total units</span><span class="r">${c.lines.reduce((a, l) => a + (+l.qty || 0), 0)}</span></div><div><span>Packed by</span><span>____________</span></div><div><span>Checked by</span><span>____________</span></div></div>`) +
+    `<div class="ruo">FOR RESEARCH USE ONLY. These products are not drugs, cosmetics or dietary supplements and are not intended for human or veterinary use, diagnosis, treatment, cure or prevention of any disease. Purchaser confirms it is a licensed clinic, laboratory or research facility and assumes all responsibility for proper handling and use. Store lyophilized vials at 2–8 °C.</div>
+    ${o.notes ? `<div class="foot"><b>Notes:</b> ${esc(o.notes)}</div>` : ''}<div class="foot">Thank you for your business. Questions: ${esc(ZEMO.email)} · ${esc(ZEMO.phone)}</div></div>`;
+}
+
+// ---------- order requests ----------
+let reqReject = null;
+function reqCalc(r) { const o = { lines: r.lines.map(l => ({ product: l.product, qty: l.qty, unitPrice: tierPrice(productByName(l.product), l.qty) ?? 0, promo: 0 })), shippingType: r.shippingType, payment: r.payment }; return calcOrder(o, purchaseStats()); }
+function renderRequests() {
+  const pend = S.requests.filter(r => r.status === 'pending').sort((a, b) => (a.submittedAt || '').localeCompare(b.submittedAt || ''));
+  $('reqBadge').hidden = !pend.length; $('reqBadge').textContent = pend.length;
+  $('reqList').innerHTML = pend.length ? pend.map(r => { const c = reqCalc(r); const known = S.clients.find(x => x.name.toLowerCase() === r.clinic.toLowerCase());
+    return `<div class="card req" data-id="${r.id}" style="margin-bottom:12px"><div class="card-h"><div><h3>${esc(r.clinic)} ${known ? '<span class="chip neutral">existing client</span>' : '<span class="chip warn">new client</span>'}</h3><div class="note">${esc(r.contact)} · ${esc(r.email)} ${r.phone ? '· ' + esc(r.phone) : ''} · submitted ${esc((r.submittedAt || '').slice(0, 16).replace('T', ' '))}</div>${r.address ? `<div class="note">Ship to: ${esc(r.address)}</div>` : ''}${r.notes ? `<div class="note">Notes: ${esc(r.notes)}</div>` : ''}</div>
+      <div class="row"><label style="margin:0;display:flex;gap:6px;align-items:center">Rep <select class="req-rep" style="width:auto">${['', ...settings().reps.map(x => x.name)].map(n => `<option value="${esc(n)}"${(known && known.defaultRep === n) ? ' selected' : ''}>${n || 'none'}</option>`).join('')}</select></label>
+      <button class="btn primary req-ok">Approve → create order</button>${reqReject === r.id ? `<span class="confirm"><button class="btn sm danger req-no-yes">Decline</button><button class="btn sm req-no-no">Keep</button></span>` : `<button class="btn req-no">Decline</button>`}</div></div>
+      <div class="tbl"><table><thead><tr><th>Product</th><th class="r">Qty</th><th class="r">Unit (tier)</th><th class="r">Line</th><th>Stock</th></tr></thead><tbody>` + c.lines.map(l => { const inv = inventoryRows().find(x => x.p.name === l.product); return `<tr><td>${esc(l.product)}</td><td class="r num">${l.qty}</td><td class="r num">${fmt(l.unitPriceUsed)}</td><td class="r num">${fmt(l.total)}</td><td>${inv ? `<span class="chip ${inv.closing >= l.qty ? 'good' : 'bad'}">${inv.closing} on hand</span>` : ''}</td></tr>`; }).join('') +
+      `</tbody><tfoot><tr><td colspan="3">${esc(r.shippingType || 'no shipping chosen')} · ${esc(r.payment || '')}</td><td class="r num">${fmt(c.total)}</td><td></td></tr></tfoot></table></div></div>`; }).join('') : `<div class="empty">No pending requests. Clinics submit at <code>${esc(location.origin)}/order</code>.</div>`;
+  const done = S.requests.filter(r => r.status !== 'pending').sort((a, b) => (b.handledAt || '').localeCompare(a.handledAt || '')).slice(0, 50);
+  $('reqDone').innerHTML = done.length ? `<table><thead><tr><th>When</th><th>Clinic</th><th>Items</th><th>Status</th><th>Order #</th></tr></thead><tbody>` + done.map(r => `<tr><td class="num">${esc((r.handledAt || '').slice(0, 10))}</td><td>${esc(r.clinic)}</td><td style="white-space:normal;font-size:.85rem">${r.lines.map(l => l.qty + '× ' + esc(l.product)).join(', ')}</td><td><span class="chip ${r.status === 'approved' ? 'good' : 'neutral'}">${r.status}</span></td><td class="num">${esc(r.orderNum || '')}</td></tr>`).join('') + `</tbody></table>` : `<div class="empty">Nothing handled yet.</div>`;
+}
+$('reqList').addEventListener('click', async e => { const card = e.target.closest('.card[data-id]'); if (!card) return; const r = S.requests.find(x => x.id === card.dataset.id); if (!r) return;
+  if (e.target.classList.contains('req-no')) { reqReject = r.id; renderRequests(); return; }
+  if (e.target.classList.contains('req-no-no')) { reqReject = null; renderRequests(); return; }
+  if (e.target.classList.contains('req-no-yes')) { reqReject = null; await write('requests', r.id, Object.assign({}, r, { status: 'declined', handledAt: new Date().toISOString() })); toast('Declined'); return; }
+  if (e.target.classList.contains('req-ok')) {
+    const repName = card.querySelector('.req-rep').value; const st = settings(); const d = today();
+    let client = S.clients.find(x => x.name.toLowerCase() === r.clinic.toLowerCase());
+    if (!client) { const cid = uid(); const nc = { name: r.clinic, state: '', contact: r.contact, email: r.email, phone: r.phone, defaultShipping: r.shippingType, defaultRep: repName, notes: (r.address ? 'Ship to: ' + r.address + '. ' : '') + 'Added from online request' }; if (!(await write('clients', cid, nc))) return; client = Object.assign({ id: cid }, nc); }
+    const o = { id: uid(), num: nextOrderNum(d), date: d, client: client.name, provider: r.contact ? 'Contact: ' + r.contact : '', rep: repName, shippingType: r.shippingType || st.shipping[0]?.name || '', shippingCharge: null, shippingCost: null, payment: r.payment || 'Square', tracking: '', datePaid: '', shipped: false, paid: false, feeWaived: false, discountAmt: 0, discountPct: 0,
+      notes: ['Online request ' + r.id.slice(-6).toUpperCase(), r.address ? 'Ship to: ' + r.address : '', r.notes].filter(Boolean).join(' · '), lines: r.lines.map(l => ({ product: l.product, qty: l.qty, unitPrice: tierPrice(productByName(l.product), l.qty) ?? 0, promo: 0, costAtSale: unitCost(productByName(l.product), purchaseStats()) })), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    if (!(await write('orders', o.id, o))) return; await write('requests', r.id, Object.assign({}, r, { status: 'approved', handledAt: new Date().toISOString(), orderId: o.id, orderNum: o.num }));
+    toast('Order ' + o.num + ' created'); loadOrderIntoForm(o);
+  } });
+
 // ---------- persistence ----------
 async function write(col, id, data) {
   if (S.db) { try { await S.db.collection(col).doc(id).set(data); return true; } catch (e) { if (e && e.code === 'invalid_argument' && S.canWrite !== true) { setReadOnly(); toast('You have view-only access'); } else toast('Save failed: ' + (e.message || e.code || 'unknown')); return false; } }
@@ -820,7 +903,7 @@ async function remove(col, id) { if (S.db) { try { await S.db.collection(col).do
 function applyLocal(col, id, data) { if (col === 'settings') { S.settings = data; return; } const arr = S[col]; const i = arr.findIndex(x => x.id === id); if (data) { data.id = id; if (i >= 0) arr[i] = data; else arr.push(data); } else if (i >= 0) arr.splice(i, 1); }
 function setReadOnly() { S.canWrite = false; document.querySelectorAll('.btn.primary, #addLine, #addProduct, #addClient').forEach(b => b.disabled = true); $('statusText').textContent = 'View only'; }
 let renderQueued = false;
-function renderAll() { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; renderDash(); renderOrders(); renderInventory(); renderPurchases(); renderSettings(); renderPriceLog(); renderReceivables(); renderPayouts(); renderClose(); renderRepView(); if (!S.editingId) { const st = settings(); if ($('oRep').options.length <= 1) resetOrderForm(); } renderLines(); }); }
+function renderAll() { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; renderDash(); renderOrders(); renderInventory(); renderPurchases(); renderSettings(); renderPriceLog(); renderReceivables(); renderPayouts(); renderClose(); renderRepView(); renderRequests(); renderSlip(); if (!S.editingId) { const st = settings(); if ($('oRep').options.length <= 1) resetOrderForm(); } renderLines(); }); }
 
 function localAdapter() {
   const listeners = {}; const cache = {};
@@ -849,7 +932,7 @@ async function boot() {
   if (user) { try { S.canWrite = await user.can('data.write'); if (S.canWrite === false) setReadOnly(); const admin = await user.canEdit(); if (admin === false) { document.querySelectorAll('#panel-settings .card').forEach((c, i) => { if (i < 3) c.classList.add('ro'); }); const n = document.createElement('p'); n.className = 'note'; n.textContent = 'Pricing, fees, shipping rates and commission are locked to the owner. You can still add clients and enter orders.'; document.getElementById('panel-settings').prepend(n); } } catch (e) {} }
   const onErr = e => { $('statusText').textContent = 'Connection issue: ' + (e.code || ''); $('dot').classList.remove('on'); };
   db.doc('settings/main').onSnapshot(s => { S.settings = s.exists ? s.data() : null; renderAll(); }, onErr);
-  for (const col of ['products', 'clients', 'orders', 'purchases', 'priceHistory', 'payouts', 'closes']) db.collection(col).onSnapshot(q => { S[col] = q.docs.map(d => Object.assign({ id: d.id }, d.data())); renderAll(); }, onErr);
+  for (const col of ['products', 'clients', 'orders', 'purchases', 'priceHistory', 'payouts', 'closes', 'requests']) db.collection(col).onSnapshot(q => { S[col] = q.docs.map(d => Object.assign({ id: d.id }, d.data())); renderAll(); }, onErr);
 }
 boot();
 })();

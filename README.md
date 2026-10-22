@@ -63,6 +63,14 @@ Runs on port 8080 (set `PORT` to change). Make it start on boot with Task Schedu
 - **Updates:** when Claude gives you a new `index.html` / `server.js`, replace the files and redeploy (Render redeploys automatically on git push). Data is untouched.
 - **Password reset:** owner can remove and re-add a user; the owner's own password is changed on the Users page. If the owner is locked out, delete `users.json` on the disk and the setup screen returns (data is not affected).
 
+## Clinic ordering page
+
+Send clinics **https://<your-site>/order**. No login; they see product names and single-unit list prices only (no costs, no other clients), pick quantities, enter clinic/contact/shipping, and submit. The request lands in the **Requests** tab (owner and staff). Click **Approve → create order** to turn it into a real order (volume tier pricing applied, client auto-created if new, rep pre-selected from the client's default). Nothing touches inventory or revenue until approved. Turn the page off in Catalog & Settings → "Clinic ordering page".
+
+## Invoice / packing slip
+
+Orders tab → 🧾 on any row (or the button on an open order). Toggle between invoice (prices, totals, paid/due badge) and packing slip (quantities + checkboxes). Print or Save as PDF from the browser; "Copy invoice text" for pasting into an email.
+
 ## Letting Claude read the site (optional)
 
 Render → your service → **Environment** → Add variable `REPORT_TOKEN` = a long random string (e.g. 32+ characters). Save (the service restarts).
