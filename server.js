@@ -131,6 +131,7 @@ http.createServer(async (req, res) => {
   const reportToken = process.env.REPORT_TOKEN;
   const isReport = reportToken && auth === 'Bearer ' + reportToken && req.method === 'GET' && p.startsWith('/api/');
   const me = isReport ? { name: 'Report', username: '_report', role: 'owner', readOnly: true } : readToken(cookies(req).zemo_session);
+  if (['/logo.png', '/logo-mark.png', '/favicon.png'].includes(p)) { const f = path.join(__dirname, p.slice(1)); if (!fs.existsSync(f)) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' }); return fs.createReadStream(f).pipe(res); }
   if (!users.length) { // first run
     if (p === '/setup' && req.method === 'POST') { const f = form(await body(req)); if (!f.username || (f.password || '').length < 12) return html(res, 400, setupPage('Password must be at least 12 characters.')); users.push({ name: f.name || f.username, username: f.username.trim().toLowerCase(), role: 'owner', hash: hash(f.password) }); saveUsers(); return redirect(res, '/', { 'Set-Cookie': cookie(req, makeToken(users[0]), SESSION_DAYS * 86400) }); }
     return html(res, 200, setupPage());
@@ -138,7 +139,6 @@ http.createServer(async (req, res) => {
   if (p === '/login') { if (req.method === 'POST') { if (tooMany(ip)) return html(res, 429, loginPage('Too many attempts. Try again in 15 minutes.')); const f = form(await body(req)); const u = users.find(x => x.username === (f.username || '').trim().toLowerCase()); if (!u || !verify(f.password || '', u.hash)) { failed(ip); return html(res, 401, loginPage('Wrong username or password.', f.next)); } return redirect(res, (f.next || '/').startsWith('/') ? f.next || '/' : '/', { 'Set-Cookie': cookie(req, makeToken(u), SESSION_DAYS * 86400) }); } return html(res, 200, loginPage('', url.searchParams.get('next'))); }
   if (p === '/logout') return redirect(res, '/login', { 'Set-Cookie': cookie(req, '', 0) });
   if (p === '/healthz') return json(res, 200, { ok: true });
-  if (['/logo.png', '/logo-mark.png', '/favicon.png'].includes(p)) { const f = path.join(__dirname, p.slice(1)); if (!fs.existsSync(f)) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' }); return fs.createReadStream(f).pipe(res); }
   // ---- Public clinic ordering page (no login). Shows product names + Tier 1 list price only; saves to `requests` for owner/staff approval. ----
   const portalOn = !(db.settings[0] && db.settings[0].clinicPortal === false);
   if (p === '/order' || p === '/order/') { if (!portalOn) return html(res, 404, PAGE('Unavailable', '<div class="card"><h1>Online ordering is paused</h1><div class="sub">Please contact Zemo directly.</div></div>')); return html(res, 200, orderPage()); }
