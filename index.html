@@ -193,7 +193,7 @@ body.slipmode .top, body.slipmode .panel{display:none!important} body.slipmode #
   </div>
   <div class="card" style="margin-top:14px">
     <div class="card-h"><h3>Products on this order</h3><button class="btn sm" id="addLine">+ Add line</button></div>
-    <div class="tbl lines"><table><thead><tr><th>Product</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Promo % off</th><th class="r">Line total</th><th class="r">Unit cost</th><th></th></tr></thead><tbody id="lineRows"></tbody></table></div>
+    <div class="tbl lines"><table><thead><tr><th>Product</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Promo % off</th><th class="r">Line total</th><th class="r">Unit cost</th><th>Lot #</th><th></th></tr></thead><tbody id="lineRows"></tbody></table></div>
     <p class="note">Commission shown here is the base rate; any monthly tier bonus appears on the Dashboard once the threshold is hit. Unit price auto-fills from the tier for that quantity (1–9 / 10–19 / 20–49 / 50–99 / 100+). Type over it if you charged something different.</p>
   </div>
 </section>
@@ -207,9 +207,11 @@ body.slipmode .top, body.slipmode .panel{display:none!important} body.slipmode #
       <select id="ordersFilter" style="width:auto"><option value="all">All</option><option value="unpaid">Unpaid</option><option value="unshipped">Unshipped</option></select>
       <input id="ordersSearch" placeholder="Search client / product / order #" style="width:240px">
       <button class="btn" id="exportOrders">Export CSV</button>
+      <label class="btn" style="margin:0;display:inline-block;cursor:pointer" title="Upload Square's Transactions CSV to mark orders paid">Import Square CSV <input type="file" id="sqFile" accept=".csv,text/csv" hidden></label>
     </div>
   </div>
   <div class="grid kpis" id="ordersKpis" style="margin-bottom:14px"></div>
+  <div id="sqPanel" hidden class="card" style="margin-bottom:14px"></div>
   <div class="card"><div class="tbl" id="ordersTable"></div></div>
 </section>
 
@@ -231,6 +233,7 @@ body.slipmode .top, body.slipmode .panel{display:none!important} body.slipmode #
   <div class="card-h"><h2>Inventory</h2><span class="note">Closing = Opening count − Sold (all orders) + Restocked (Purchases). Click an opening count to correct it.</span></div>
   <div class="grid kpis" id="invKpis" style="margin-bottom:14px"></div>
   <div class="card"><div class="tbl" id="invTable"></div></div>
+  <div class="card" style="margin-top:14px"><div class="card-h"><h3>Lots &amp; COAs</h3><span class="note">Lots come from Purchases (Lot # on a Product restock). Shipments against a lot are the Lot # typed on order lines.</span></div><div class="tbl" id="lotTable"></div></div>
 </section>
 
 <!-- PURCHASES -->
@@ -245,6 +248,8 @@ body.slipmode .top, body.slipmode .panel{display:none!important} body.slipmode #
       <div class="field"><label for="pUnit">Cost per unit ($)</label><input type="number" step="0.01" id="pUnit" class="edit"></div>
       <div class="field"><label for="pTotal">Total paid ($)</label><input type="number" step="0.01" id="pTotal" class="edit"></div>
       <div class="field"><label for="pVendor">Vendor</label><input id="pVendor" class="edit" placeholder="Mike / Jason / Mateo / Uline…"></div>
+      <div class="field"><label for="pLot">Lot # (restock)</label><input id="pLot" class="edit" placeholder="e.g. ZL-24-0917"></div>
+      <div class="field"><label for="pCoa">COA link or ref</label><input id="pCoa" class="edit" placeholder="URL or file name"></div>
       <div class="field"><label for="pNotes">Notes</label><input id="pNotes" class="edit"></div>
     </div>
     <div class="row" style="margin-top:12px"><button class="btn primary" id="savePurchase">Log purchase</button><span class="note">Product rows restock inventory and update that product's weighted-average unit cost. Supplies rows feed packaging cost per shipment.</span></div>
@@ -382,14 +387,15 @@ function calcOrder(o, ps) {
   const shipCost = o.shippingCost != null && o.shippingCost !== '' ? +o.shippingCost : (shipRow ? +shipRow.cost : 0);
   const discount = Math.min(productSales, (+o.discountAmt || 0) + productSales * ((+o.discountPct || 0) / 100));   // order-level discount, applied to products only
   const subtotal = productSales - discount + shipCharge;
-  const squareCost = o.payment === 'Square' ? subtotal * (+st.squareFeePct || 0) : 0;   // what Square takes
-  const square = o.feeWaived ? 0 : squareCost;                                           // what we add to the invoice (normally the same)
+  const squareEst = o.payment === 'Square' ? subtotal * (+st.squareFeePct || 0) : 0;
+  const squareCost = o.squareActualFee != null && o.squareActualFee !== '' ? +o.squareActualFee : squareEst;   // what Square actually took (from import) or the estimate
+  const square = o.feeWaived ? 0 : squareEst;                                            // what we add to the invoice (billed at the configured %)
   const total = subtotal + square;
   const packaging = o.shippingType && o.shippingType !== 'Local Pickup' ? packagingPerShipment(ps) : 0;
   const rep = st.reps.find(r => r.name === o.rep);
   const commission = rep ? (+rep.rate || 0) * (total - (st.deductSquareFromCommission ? square : 0)) : 0;
   const profit = total - squareCost - cogs - shipCost - packaging - commission;
-  return { lines, productSales, discount, shipCharge, shipCost, subtotal, total, square, squareCost, feeWaived: !!o.feeWaived && squareCost > 0, packaging, cogs, commission, profit, net: total - squareCost };
+  return { lines, productSales, discount, shipCharge, shipCost, subtotal, total, square, squareCost, squareEst, feeWaived: !!o.feeWaived && squareEst > 0, packaging, cogs, commission, profit, net: total - squareCost };
 }
 function repMonthSummary(month, ps) { // per-rep base commission + tier true-up for a month
   const st = settings(); const out = {};
@@ -418,6 +424,12 @@ function nextOrderNum(date) {
 function monthsAvailable() {
   const set = new Set(S.orders.flatMap(o => [ym(o.date), ym(recDate(o))]).filter(Boolean)); set.add(ym(today()));
   return [...set].sort().reverse();
+}
+function lotsFor(product) { // lots received (Purchases) minus lots shipped (order lines), per product
+  const m = {};
+  for (const pu of S.purchases) if (pu.category === 'Product' && pu.product === product && pu.lot) { const e = m[pu.lot] || (m[pu.lot] = { lot: pu.lot, received: 0, shipped: 0, coa: '', date: pu.date }); e.received += +pu.qty || 0; if (pu.coa) e.coa = pu.coa; if (pu.date < e.date) e.date = pu.date; }
+  for (const o of S.orders) for (const l of o.lines || []) if (l.product === product && l.lot) { const e = m[l.lot] || (m[l.lot] = { lot: l.lot, received: 0, shipped: 0, coa: '', date: o.date }); e.shipped += +l.qty || 0; }
+  return Object.values(m).map(e => Object.assign(e, { onHand: e.received - e.shipped })).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 }
 function inventoryRows() {
   const ps = purchaseStats(); const sold = {};
@@ -461,6 +473,7 @@ function renderLines() {
       <td class="r"><input class="edit promo lpr" type="number" step="1" min="0" max="100" value="${esc(l.promo || '')}" placeholder="0" aria-label="Promo"></td>
       <td class="r num">${fmt(total)}</td>
       <td class="r num">${p ? fmt(unitCost(p, ps)) : '—'}</td>
+      <td><input class="edit llot" list="lots-${i}" value="${esc(l.lot || '')}" placeholder="lot" style="width:110px" aria-label="Lot"><datalist id="lots-${i}">${p ? lotsFor(p.name).filter(x => x.onHand > 0).map(x => `<option value="${esc(x.lot)}">${x.onHand} left</option>`).join('') : ''}</datalist></td>
       <td><button class="btn sm ldel" aria-label="Remove line">×</button></td></tr>`;
   }).join('');
   renderOrderTotals();
@@ -470,6 +483,7 @@ $('lineRows').addEventListener('input', e => {
   if (e.target.classList.contains('lq')) { l.qty = e.target.value; if (!l.priceTouched) { l.unitPrice = null; renderLines(); return; } }
   if (e.target.classList.contains('lu')) { l.unitPrice = e.target.value; l.priceTouched = true; }
   if (e.target.classList.contains('lpr')) l.promo = e.target.value;
+  if (e.target.classList.contains('llot')) { l.lot = e.target.value; return; }
   if (e.target.classList.contains('lp')) { l.product = e.target.value; l.unitPrice = null; l.priceTouched = false; renderLines(); return; }
   // update totals without rerendering inputs
   renderOrderTotals(); const i = +tr.dataset.i; const row = calcLinePreview(l); tr.children[4].textContent = fmt(row);
@@ -484,7 +498,7 @@ function formOrder() {
     shippingType: $('oShipType').value, shippingCharge: $('oShipCharge').value === '' ? null : +$('oShipCharge').value,
     shippingCost: $('oShipCost').value === '' ? null : +$('oShipCost').value, payment: $('oPayment').value, tracking: $('oTracking').value.trim(),
     datePaid: $('oDatePaid').value, shipped: $('oShipped').checked, paid: $('oPaid').checked, feeWaived: $('oFeeWaived').checked, discountAmt: +$('oDiscAmt').value || 0, discountPct: +$('oDiscPct').value || 0, notes: $('oNotes').value.trim(),
-    lines: formLines.filter(l => l.product).map(l => ({ product: l.product, qty: +l.qty || 0, unitPrice: l.unitPrice != null && l.unitPrice !== '' ? +l.unitPrice : (tierPrice(productByName(l.product), +l.qty || 0) ?? 0), promo: +l.promo || 0, costAtSale: l.costAtSale != null && l.costProduct === l.product ? l.costAtSale : unitCost(productByName(l.product), purchaseStats()) })) };
+    lines: formLines.filter(l => l.product).map(l => ({ product: l.product, qty: +l.qty || 0, unitPrice: l.unitPrice != null && l.unitPrice !== '' ? +l.unitPrice : (tierPrice(productByName(l.product), +l.qty || 0) ?? 0), promo: +l.promo || 0, lot: (l.lot || '').trim(), costAtSale: l.costAtSale != null && l.costProduct === l.product ? l.costAtSale : unitCost(productByName(l.product), purchaseStats()) })) };
 }
 function renderOrderTotals() {
   const o = formOrder(); const c = calcOrder(o, purchaseStats()); const st = settings();
@@ -512,7 +526,7 @@ function loadOrderIntoForm(o) {
   fillSelect($('oRep'), st.reps.map(r => r.name), o.rep, 'No rep'); fillSelect($('oShipType'), st.shipping.map(s => s.name), o.shippingType, 'Select…'); fillSelect($('oPayment'), st.paymentMethods, o.payment);
   $('oDate').value = o.date; $('oClient').value = o.client || ''; $('oProvider').value = o.provider || ''; $('oShipCharge').value = o.shippingCharge ?? ''; $('oShipCost').value = o.shippingCost ?? '';
   $('oTracking').value = o.tracking || ''; $('oDatePaid').value = o.datePaid || ''; $('oShipped').checked = !!o.shipped; $('oPaid').checked = !!o.paid; $('oFeeWaived').checked = !!o.feeWaived; $('oDiscAmt').value = o.discountAmt || ''; $('oDiscPct').value = o.discountPct || ''; $('oNotes').value = o.notes || '';
-  formLines = (o.lines || []).map(l => ({ product: l.product, qty: l.qty, unitPrice: l.unitPrice, promo: l.promo || '', priceTouched: true, costAtSale: l.costAtSale, costProduct: l.product })); if (!formLines.length) formLines = [{ product: '', qty: 1, unitPrice: null, promo: '' }];
+  formLines = (o.lines || []).map(l => ({ product: l.product, qty: l.qty, unitPrice: l.unitPrice, promo: l.promo || '', lot: l.lot || '', priceTouched: true, costAtSale: l.costAtSale, costProduct: l.product })); if (!formLines.length) formLines = [{ product: '', qty: 1, unitPrice: null, promo: '' }];
   renderLines(); showTab('new'); window.scrollTo({ top: 0 });
 }
 $('resetOrder').onclick = resetOrderForm;
@@ -565,13 +579,43 @@ $('ordersMonth').onchange = e => { S.ordersMonth = e.target.value; renderOrders(
 $('ordersFilter').onchange = renderOrders; $('ordersSearch').oninput = renderOrders;
 $('exportOrders').onclick = async () => {
   if (!S.downloads) return toast('Download not available in this view');
-  const ps = purchaseStats(); const head = ['Order #','Date','Clinic / Client','Patient or Provider','Product','Qty','Unit Price','Promo % Off','Line Total','Order Discount','Shipping Type (1st line of order only)','Shipping Charge','Order Total','Payment Method','Square Fee','Net Received','Sales Rep','Shipped','Paid','Date Paid','Tracking #','Notes','Unit Cost','COGS','Shipping Cost','Packaging Cost','Order Profit','Commission','Month'];
+  const ps = purchaseStats(); const head = ['Order #','Date','Clinic / Client','Patient or Provider','Product','Qty','Unit Price','Promo % Off','Line Total','Lot #','Order Discount','Shipping Type (1st line of order only)','Shipping Charge','Order Total','Payment Method','Square Fee','Net Received','Sales Rep','Shipped','Paid','Date Paid','Tracking #','Notes','Unit Cost','COGS','Shipping Cost','Packaging Cost','Order Profit','Commission','Month'];
   const rows = [head];
   for (const o of S.orders.slice().sort((a, b) => (a.date + a.num).localeCompare(b.date + b.num))) { const c = calcOrder(o, ps);
-    c.lines.forEach((l, i) => rows.push([o.num, o.date, o.client, o.provider, l.product, l.qty, l.unitPriceUsed, l.promo || '', l.total.toFixed(2), i === 0 && c.discount ? c.discount.toFixed(2) : '', i === 0 ? o.shippingType : '', i === 0 ? c.shipCharge : '', i === 0 ? c.total.toFixed(2) : '', o.payment, i === 0 ? c.square.toFixed(2) : '', i === 0 ? c.net.toFixed(2) : '', o.rep, o.shipped, o.paid, o.datePaid, o.tracking, o.notes, l.unitCost.toFixed(2), (l.qty * l.unitCost).toFixed(2), i === 0 ? c.shipCost : '', i === 0 ? c.packaging.toFixed(2) : '', i === 0 ? c.profit.toFixed(2) : '', i === 0 ? c.commission.toFixed(2) : '', ym(o.date)])); }
+    c.lines.forEach((l, i) => rows.push([o.num, o.date, o.client, o.provider, l.product, l.qty, l.unitPriceUsed, l.promo || '', l.total.toFixed(2), l.lot || '', i === 0 && c.discount ? c.discount.toFixed(2) : '', i === 0 ? o.shippingType : '', i === 0 ? c.shipCharge : '', i === 0 ? c.total.toFixed(2) : '', o.payment, i === 0 ? c.square.toFixed(2) : '', i === 0 ? c.net.toFixed(2) : '', o.rep, o.shipped, o.paid, o.datePaid, o.tracking, o.notes, l.unitCost.toFixed(2), (l.qty * l.unitCost).toFixed(2), i === 0 ? c.shipCost : '', i === 0 ? c.packaging.toFixed(2) : '', i === 0 ? c.profit.toFixed(2) : '', i === 0 ? c.commission.toFixed(2) : '', ym(o.date)])); }
   const csv = rows.map(r => r.map(v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
   try { await S.downloads.save({ filename: 'zemo-orders-' + today() + '.csv', data: csv }); } catch (e) { toast('Download cancelled'); }
 };
+
+// ---------- Square CSV import ----------
+function parseCsv(text) { const rows = []; let row = [], cell = '', q = false; for (let i = 0; i < text.length; i++) { const ch = text[i]; if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; } else if (ch === '"') q = true; else if (ch === ',') { row.push(cell); cell = ''; } else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; } else cell += ch; } if (cell !== '' || row.length) { row.push(cell); rows.push(row); } return rows.filter(r => r.some(x => x !== '')); }
+const money = s => { const n = parseFloat(String(s || '').replace(/[^0-9.\-]/g, '')); return isNaN(n) ? 0 : n; };
+function sqDate(s) { const m = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})/); if (m) return m[0]; const d = new Date(s); return isNaN(d) ? '' : ymd(d); }
+let sqMatches = [];
+$('sqFile').addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; const text = await f.text(); e.target.value = '';
+  const rows = parseCsv(text); if (rows.length < 2) return toast('Empty CSV'); const head = rows[0].map(x => x.trim().toLowerCase());
+  const col = (...names) => { for (const n of names) { const i = head.indexOf(n.toLowerCase()); if (i >= 0) return i; } return -1; };
+  const ci = { date: col('Date'), total: col('Total Collected', 'Amount', 'Total'), fee: col('Fees', 'Fee', 'Processing Fees'), net: col('Net Total', 'Net Amount'), cust: col('Customer Name', 'Customer'), id: col('Transaction ID', 'Payment ID', 'ID'), status: col('Transaction Status', 'Status'), type: col('Event Type', 'Type'), desc: col('Description', 'Details') };
+  if (ci.date < 0 || ci.total < 0) return toast('Not a Square transactions export (need Date and Total Collected columns)');
+  const ps = purchaseStats(); const open = S.orders.filter(o => !o.paid).map(o => ({ o, c: calcOrder(o, ps) })); const used = new Set(); sqMatches = [];
+  for (const r of rows.slice(1)) { const amt = money(r[ci.total]); if (amt <= 0) continue; if (ci.status >= 0 && /refund|void|fail|declin/i.test(r[ci.status] || '')) continue; if (ci.type >= 0 && /refund/i.test(r[ci.type] || '')) continue;
+    const d = sqDate(r[ci.date]); const fee = ci.fee >= 0 ? Math.abs(money(r[ci.fee])) : null; const cust = ci.cust >= 0 ? (r[ci.cust] || '').trim() : ''; const tid = ci.id >= 0 ? r[ci.id] : '';
+    if (tid && S.orders.some(o => o.squareTxn === tid)) continue; // already imported
+    const cands = open.filter(x => !used.has(x.o.id) && Math.abs(x.c.total - amt) < 0.015 && (!d || Math.abs((new Date(d) - new Date(x.o.date)) / 864e5) <= 14));
+    let pick = cands[0]; if (cands.length > 1 && cust) pick = cands.find(x => x.o.client.toLowerCase().includes(cust.toLowerCase().split(' ')[0]) || cust.toLowerCase().includes(x.o.client.toLowerCase().split(' ')[0])) || cands[0];
+    if (pick) used.add(pick.o.id);
+    sqMatches.push({ date: d, amt, fee, cust, tid, desc: ci.desc >= 0 ? r[ci.desc] : '', order: pick ? pick.o : null, ambiguous: cands.length > 1, checked: !!pick }); }
+  renderSqPanel(); });
+function renderSqPanel() { const m = sqMatches; const matched = m.filter(x => x.order).length; $('sqPanel').hidden = false;
+  $('sqPanel').innerHTML = `<div class="card-h"><h3>Square import — ${m.length} payments, ${matched} matched to open orders</h3><div class="row"><button class="btn primary" id="sqApply"${matched ? '' : ' disabled'}>Mark ${m.filter(x => x.order && x.checked).length} paid</button><button class="btn" id="sqClose">Close</button></div></div>
+    <div class="tbl"><table><thead><tr><th></th><th>Square date</th><th class="r">Collected</th><th class="r">Square fee</th><th>Customer</th><th>Matched order</th><th>Note</th></tr></thead><tbody>` +
+    m.map((x, i) => `<tr><td>${x.order ? `<input type="checkbox" class="sqchk" data-i="${i}"${x.checked ? ' checked' : ''}>` : ''}</td><td class="num">${esc(x.date)}</td><td class="r num">${fmt(x.amt)}</td><td class="r num">${x.fee == null ? '—' : fmt(x.fee)}</td><td>${esc(x.cust)}</td><td>${x.order ? `<b>${esc(x.order.num)}</b> ${esc(x.order.client)}` : '<span class="note">no open order for this amount</span>'}</td><td class="note">${x.ambiguous ? 'several orders matched this amount — check' : ''}</td></tr>`).join('') + `</tbody></table></div>
+    <p class="note">Matches an unpaid order whose invoice total equals the amount collected (within 14 days of the order date). Marking paid sets Date Paid to the Square date and records Square's actual fee for profit. Already-imported transactions are skipped.</p>`; }
+document.addEventListener('change', e => { if (e.target.classList.contains('sqchk')) sqMatches[+e.target.dataset.i].checked = e.target.checked; });
+document.addEventListener('click', async e => { if (e.target.id === 'sqClose') { $('sqPanel').hidden = true; sqMatches = []; }
+  if (e.target.id === 'sqApply') { let n = 0; for (const x of sqMatches) { if (!x.order || !x.checked) continue; const o = S.orders.find(y => y.id === x.order.id); if (!o || o.paid) continue;
+      const ok = await write('orders', o.id, Object.assign({}, o, { paid: true, datePaid: x.date || today(), payment: 'Square', squareActualFee: x.fee, squareTxn: x.tid || undefined, updatedAt: new Date().toISOString() })); if (ok) n++; }
+    toast(`${n} order${n === 1 ? '' : 's'} marked paid`); $('sqPanel').hidden = true; sqMatches = []; } });
 
 // ---------- inventory ----------
 function renderInventory() {
@@ -584,15 +628,22 @@ function renderInventory() {
       <td class="r num">${r.sold}</td><td class="r num">${r.restocked}</td><td class="r num"><b>${r.closing}</b></td><td class="r num">${fmt(r.uc)}</td><td class="r num">${fmt(r.closing > 0 ? r.value : 0)}</td><td class="r num">${r.p.reorderPt ?? ''}</td>
       <td><span class="chip ${r.status === 'OK' ? 'good' : r.status === 'REORDER' ? 'warn' : 'bad'}">${r.status}</span></td></tr>`).join('') + `</tbody></table>`;
 }
+function renderLots() {
+  const rows = []; for (const p of S.products) for (const l of lotsFor(p.name)) rows.push(Object.assign({ product: p.name }, l));
+  if (!rows.length) { $('lotTable').innerHTML = `<div class="empty">No lots yet. Add a Lot # (and COA link) when logging a Product restock on the Purchases tab.</div>`; return; }
+  const shipments = lot => S.orders.flatMap(o => (o.lines || []).filter(l => l.lot === lot.lot && l.product === lot.product).map(l => `${o.num} (${l.qty})`)).join(', ');
+  $('lotTable').innerHTML = `<table><thead><tr><th>Product</th><th>Lot #</th><th>Received</th><th class="r">Qty in</th><th class="r">Shipped</th><th class="r">On hand</th><th>COA</th><th>Shipped on orders</th></tr></thead><tbody>` +
+    rows.map(r => `<tr><td>${esc(r.product)}</td><td class="num">${esc(r.lot)}</td><td class="num">${esc(r.date || '')}</td><td class="r num">${r.received}</td><td class="r num">${r.shipped}</td><td class="r num ${r.onHand < 0 ? 'bad' : ''}"><b>${r.onHand}</b></td><td>${r.coa ? (/^https?:\/\//.test(r.coa) ? `<a href="${esc(r.coa)}" target="_blank" rel="noopener">COA</a>` : esc(r.coa)) : '<span class="note">—</span>'}</td><td style="white-space:normal;font-size:.85rem">${shipments(r) || ''}</td></tr>`).join('') + `</tbody></table>`;
+}
 $('invTable').addEventListener('change', async e => { if (!e.target.classList.contains('inv-open')) return; const p = S.products.find(x => x.id === e.target.dataset.id); if (!p) return; await write('products', p.id, Object.assign({}, p, { opening: e.target.value === '' ? null : +e.target.value })); toast('Opening count saved'); });
 
 // ---------- purchases ----------
 $('pQty').oninput = $('pUnit').oninput = () => { const q = +$('pQty').value, u = +$('pUnit').value; if (q && u) $('pTotal').value = (q * u).toFixed(2); };
 $('pTotal').oninput = () => { const q = +$('pQty').value, t = +$('pTotal').value; if (q && t) $('pUnit').value = (t / q).toFixed(2); };
 $('savePurchase').onclick = async () => {
-  const pu = { id: uid(), date: $('pDate').value || today(), category: $('pCat').value, product: $('pCat').value === 'Product' ? $('pProduct').value : '', qty: +$('pQty').value || 0, unitCost: +$('pUnit').value || 0, total: +$('pTotal').value || 0, vendor: $('pVendor').value.trim(), notes: $('pNotes').value.trim(), createdAt: new Date().toISOString() };
+  const pu = { id: uid(), date: $('pDate').value || today(), category: $('pCat').value, product: $('pCat').value === 'Product' ? $('pProduct').value : '', qty: +$('pQty').value || 0, unitCost: +$('pUnit').value || 0, total: +$('pTotal').value || 0, vendor: $('pVendor').value.trim(), lot: $('pLot').value.trim(), coa: $('pCoa').value.trim(), notes: $('pNotes').value.trim(), createdAt: new Date().toISOString() };
   if (pu.category === 'Product' && !pu.product) return toast('Pick the product being restocked'); if (!pu.total) return toast('Enter the total paid');
-  if (await write('purchases', pu.id, pu)) { toast('Purchase logged'); ['pQty','pUnit','pTotal','pVendor','pNotes'].forEach(id => $(id).value = ''); }
+  if (await write('purchases', pu.id, pu)) { toast('Purchase logged'); ['pQty','pUnit','pTotal','pVendor','pLot','pCoa','pNotes'].forEach(id => $(id).value = ''); }
 };
 let pendingPurchDelete = null;
 function renderPurchases() {
@@ -600,10 +651,10 @@ function renderPurchases() {
   if (!$('pDate').value) $('pDate').value = today();
   const rows = S.purchases.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   if (!rows.length) { $('purchTable').innerHTML = `<div class="empty">No purchases logged yet. Every restock, box of vials, or roll of labels goes here.</div>`; return; }
-  $('purchTable').innerHTML = `<table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th class="r">Units</th><th class="r">$/unit</th><th class="r">Total</th><th>Vendor</th><th>Notes</th><th></th></tr></thead><tbody>` +
-    rows.map(p => `<tr data-id="${p.id}"><td class="num">${esc(p.date)}</td><td>${esc(p.category)}</td><td>${esc(p.product)}</td><td class="r num">${p.qty || ''}</td><td class="r num">${p.unitCost ? fmt(p.unitCost) : ''}</td><td class="r num">${fmt(p.total)}</td><td>${esc(p.vendor)}</td><td style="white-space:normal">${esc(p.notes)}</td>
+  $('purchTable').innerHTML = `<table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th class="r">Units</th><th class="r">$/unit</th><th class="r">Total</th><th>Vendor</th><th>Lot</th><th>COA</th><th>Notes</th><th></th></tr></thead><tbody>` +
+    rows.map(p => `<tr data-id="${p.id}"><td class="num">${esc(p.date)}</td><td>${esc(p.category)}</td><td>${esc(p.product)}</td><td class="r num">${p.qty || ''}</td><td class="r num">${p.unitCost ? fmt(p.unitCost) : ''}</td><td class="r num">${fmt(p.total)}</td><td>${esc(p.vendor)}</td><td class="num">${esc(p.lot || '')}</td><td>${p.coa ? (/^https?:\/\//.test(p.coa) ? `<a href="${esc(p.coa)}" target="_blank" rel="noopener">COA</a>` : esc(p.coa)) : ''}</td><td style="white-space:normal">${esc(p.notes)}</td>
       <td>${pendingPurchDelete === p.id ? `<span class="confirm"><button class="btn sm danger pdel-yes">Delete</button><button class="btn sm pdel-no">Keep</button></span>` : `<button class="btn sm pdel" aria-label="Delete">🗑</button>`}</td></tr>`).join('') +
-    `</tbody><tfoot><tr><td colspan="5">Total</td><td class="r num">${fmt(rows.reduce((a, p) => a + (+p.total || 0), 0))}</td><td colspan="3"></td></tr></tfoot></table>`;
+    `</tbody><tfoot><tr><td colspan="5">Total</td><td class="r num">${fmt(rows.reduce((a, p) => a + (+p.total || 0), 0))}</td><td colspan="5"></td></tr></tfoot></table>`;
 }
 $('purchTable').addEventListener('click', async e => { const tr = e.target.closest('tr[data-id]'); if (!tr) return; const id = tr.dataset.id;
   if (e.target.classList.contains('pdel')) { pendingPurchDelete = id; renderPurchases(); } else if (e.target.classList.contains('pdel-no')) { pendingPurchDelete = null; renderPurchases(); } else if (e.target.classList.contains('pdel-yes')) { pendingPurchDelete = null; await remove('purchases', id); toast('Deleted'); } });
@@ -858,7 +909,7 @@ function renderSlip() {
     <div class="meta"><div><div class="k">${inv ? 'Bill to' : 'Ship to'}</div><div><b>${esc(o.client)}</b></div>${cl.contact ? `<div>${esc(cl.contact)}</div>` : ''}${o.provider ? `<div>${esc(o.provider)}</div>` : ''}${cl.email ? `<div>${esc(cl.email)}</div>` : ''}${cl.phone ? `<div>${esc(cl.phone)}</div>` : ''}</div>
       <div><div class="k">Shipping</div><div>${esc(o.shippingType || '')}</div>${o.tracking ? `<div class="k" style="margin-top:6px">Tracking</div><div style="font-family:var(--mono)">${esc(o.tracking)}</div>` : ''}${inv && o.payment ? `<div class="k" style="margin-top:6px">Payment</div><div>${esc(o.payment)}</div>` : ''}${o.rep ? `<div class="k" style="margin-top:6px">Account rep</div><div>${esc(o.rep)}</div>` : ''}</div></div>
     <table><thead><tr><th style="width:52%">Item</th><th class="r">Qty</th>${inv ? '<th class="r">Unit price</th><th class="r">Amount</th>' : '<th>Packed</th>'}</tr></thead><tbody>` +
-    c.lines.map(l => `<tr><td>${esc(l.product)}<div class="note" style="color:#5b6b7a;font-size:.75rem">Research use only · lyophilized unless noted</div></td><td class="r">${l.qty}</td>${inv ? `<td class="r">${fmt(l.unitPriceUsed)}${l.promo ? `<div class="note" style="color:#5b6b7a;font-size:.72rem">${l.promo}% off</div>` : ''}</td><td class="r">${fmt(l.total)}</td>` : '<td>☐</td>'}</tr>`).join('') + `</tbody></table>` +
+    c.lines.map(l => `<tr><td>${esc(l.product)}<div class="note" style="color:#5b6b7a;font-size:.75rem">Research use only${l.lot ? ' · Lot ' + esc(l.lot) : ''}</div></td><td class="r">${l.qty}</td>${inv ? `<td class="r">${fmt(l.unitPriceUsed)}${l.promo ? `<div class="note" style="color:#5b6b7a;font-size:.72rem">${l.promo}% off</div>` : ''}</td><td class="r">${fmt(l.total)}</td>` : '<td>☐</td>'}</tr>`).join('') + `</tbody></table>` +
     (inv ? `<div class="totals"><div><span>Products</span><span class="r">${fmt(c.productSales)}</span></div>${c.discount ? `<div><span>Discount</span><span class="r">−${fmt(c.discount)}</span></div>` : ''}<div><span>Shipping</span><span class="r">${fmt(c.shipCharge)}</span></div>${c.square ? `<div><span>Card processing (${pct(st.squareFeePct)})</span><span class="r">${fmt(c.square)}</span></div>` : ''}<div class="big"><span>Total</span><span class="r">${fmt(c.total)}</span></div>${!o.paid ? `<div class="note" style="margin-top:8px;color:#5b6b7a">Pay by Zelle or ACH to avoid the card processing fee — contact us for details.</div>` : ''}</div>` : `<div class="totals"><div><span>Total units</span><span class="r">${c.lines.reduce((a, l) => a + (+l.qty || 0), 0)}</span></div><div><span>Packed by</span><span>____________</span></div><div><span>Checked by</span><span>____________</span></div></div>`) +
     `<div class="ruo">FOR RESEARCH USE ONLY. These products are not drugs, cosmetics or dietary supplements and are not intended for human or veterinary use, diagnosis, treatment, cure or prevention of any disease. Purchaser confirms it is a licensed clinic, laboratory or research facility and assumes all responsibility for proper handling and use. Store lyophilized vials at 2–8 °C.</div>
     ${o.notes ? `<div class="foot"><b>Notes:</b> ${esc(o.notes)}</div>` : ''}<div class="foot">Thank you for your business. Questions: ${esc(ZEMO.email)} · ${esc(ZEMO.phone)}</div></div>`;
@@ -903,7 +954,7 @@ async function remove(col, id) { if (S.db) { try { await S.db.collection(col).do
 function applyLocal(col, id, data) { if (col === 'settings') { S.settings = data; return; } const arr = S[col]; const i = arr.findIndex(x => x.id === id); if (data) { data.id = id; if (i >= 0) arr[i] = data; else arr.push(data); } else if (i >= 0) arr.splice(i, 1); }
 function setReadOnly() { S.canWrite = false; document.querySelectorAll('.btn.primary, #addLine, #addProduct, #addClient').forEach(b => b.disabled = true); $('statusText').textContent = 'View only'; }
 let renderQueued = false;
-function renderAll() { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; renderDash(); renderOrders(); renderInventory(); renderPurchases(); renderSettings(); renderPriceLog(); renderReceivables(); renderPayouts(); renderClose(); renderRepView(); renderRequests(); renderSlip(); if (!S.editingId) { const st = settings(); if ($('oRep').options.length <= 1) resetOrderForm(); } renderLines(); }); }
+function renderAll() { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; renderDash(); renderOrders(); renderInventory(); renderPurchases(); renderSettings(); renderPriceLog(); renderReceivables(); renderPayouts(); renderClose(); renderRepView(); renderRequests(); renderSlip(); renderLots(); if (!S.editingId) { const st = settings(); if ($('oRep').options.length <= 1) resetOrderForm(); } renderLines(); }); }
 
 function localAdapter() {
   const listeners = {}; const cache = {};

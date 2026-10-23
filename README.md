@@ -71,6 +71,14 @@ Send clinics **https://<your-site>/order**. No login; they see product names and
 
 Orders tab → 🧾 on any row (or the button on an open order). Toggle between invoice (prices, totals, paid/due badge) and packing slip (quantities + checkboxes). Print or Save as PDF from the browser; "Copy invoice text" for pasting into an email.
 
+## Square import
+
+Orders tab → **Import Square CSV** → upload the Transactions export from Square Dashboard (Transactions → Export). Each payment is matched to an unpaid order with the same invoice total (within 14 days). Review the matches, untick any you don't want, click **Mark paid**. Date Paid becomes the Square date and Square's real fee replaces the 5% estimate in profit. Re-importing the same file is safe (transaction IDs are remembered).
+
+## Lots & COAs
+
+Purchases tab → log a Product restock with a **Lot #** and a **COA link/ref**. Inventory tab → "Lots & COAs" shows each lot's received / shipped / on-hand and its COA. On an order line, type the Lot # shipped (dropdown suggests lots with stock); it prints on the packing slip and invoice.
+
 ## Letting Claude read the site (optional)
 
 Render → your service → **Environment** → Add variable `REPORT_TOKEN` = a long random string (e.g. 32+ characters). Save (the service restarts).
