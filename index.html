@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0}[hidden]{display:none!important}</style></head><body>
-<title>Zemo Labs Order Desk</title>
+<title>Zemo Order Desk</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: a fixed top bar with tabs; each tab is a work surface — summary first, then the table. Numbers live in mono; pharmacy-ledger feel, cool slate neutrals, one teal-ink accent. */
@@ -121,7 +121,7 @@ body.slipmode .top, body.slipmode .panel{display:none!important} body.slipmode #
 </style>
 
 <header class="top"><div class="top-in">
-  <div class="brand"><h1>Zemo Labs Order Desk</h1><span class="sub">Sales · Inventory · Commission</span></div>
+  <div class="brand"><h1 id="brandName">Zemo Order Desk</h1><span class="sub">Sales · Inventory · Commission</span></div>
   <nav class="tabs" role="tablist" id="tabs">
     <button class="tab" role="tab" data-tab="dash" aria-selected="true">Dashboard</button>
     <button class="tab" role="tab" data-tab="new">New Order</button>
@@ -300,6 +300,15 @@ body.slipmode .top, body.slipmode .panel{display:none!important} body.slipmode #
         <div class="field"><label for="sPortal">Clinic ordering page</label><select id="sPortal" class="edit"><option value="on">On — clinics can submit at /order</option><option value="off">Off — page shows "paused"</option></select></div>
         <div class="field"><label for="sBasis">Revenue counts on</label><select id="sBasis" class="edit"><option value="paid">Date paid (cash basis)</option><option value="order">Order date</option></select></div>
         <div class="field"><label for="sDeduct">Commission base</label><select id="sDeduct" class="edit"><option value="yes">Product + shipping (excludes card fee)</option><option value="no">Full invoice total incl. card fee</option></select></div>
+      </div>
+      <h3 style="margin-top:16px">Company info (invoices, packing slips, clinic ordering page)</h3>
+      <div class="form-grid" style="margin-top:8px">
+        <div class="field"><label for="cName">Company name</label><input id="cName" class="edit"></div>
+        <div class="field"><label for="cPhone">Phone</label><input id="cPhone" class="edit"></div>
+        <div class="field" style="grid-column:1/-1"><label for="cAddr">Address</label><input id="cAddr" class="edit"></div>
+        <div class="field"><label for="cEmail">Email</label><input id="cEmail" class="edit"></div>
+        <div class="field"><label for="cFooter">Invoice footer line</label><input id="cFooter" class="edit"></div>
+        <div class="field" style="grid-column:1/-1"><label for="cRuo">RUO / legal statement</label><textarea id="cRuo" rows="3" class="edit"></textarea></div>
       </div>
       <h3 style="margin-top:16px">Sales reps</h3>
       <div class="tbl" id="repsEdit"></div>
@@ -652,10 +661,11 @@ function renderPurchases() {
   const rows = S.purchases.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   if (!rows.length) { $('purchTable').innerHTML = `<div class="empty">No purchases logged yet. Every restock, box of vials, or roll of labels goes here.</div>`; return; }
   $('purchTable').innerHTML = `<table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th class="r">Units</th><th class="r">$/unit</th><th class="r">Total</th><th>Vendor</th><th>Lot</th><th>COA</th><th>Notes</th><th></th></tr></thead><tbody>` +
-    rows.map(p => `<tr data-id="${p.id}"><td class="num">${esc(p.date)}</td><td>${esc(p.category)}</td><td>${esc(p.product)}</td><td class="r num">${p.qty || ''}</td><td class="r num">${p.unitCost ? fmt(p.unitCost) : ''}</td><td class="r num">${fmt(p.total)}</td><td>${esc(p.vendor)}</td><td class="num">${esc(p.lot || '')}</td><td>${p.coa ? (/^https?:\/\//.test(p.coa) ? `<a href="${esc(p.coa)}" target="_blank" rel="noopener">COA</a>` : esc(p.coa)) : ''}</td><td style="white-space:normal">${esc(p.notes)}</td>
+    rows.map(p => `<tr data-id="${p.id}"><td><input class="edit num pe2" data-k="date" type="date" value="${esc(p.date)}" style="width:140px"></td><td>${esc(p.category)}</td><td>${esc(p.product)}</td><td class="r"><input class="edit num pe2" data-k="qty" type="number" step="1" value="${p.qty || ''}" style="width:70px;text-align:right"></td><td class="r"><input class="edit num pe2" data-k="unitCost" type="number" step="0.01" value="${p.unitCost || ''}" style="width:90px;text-align:right"></td><td class="r"><input class="edit num pe2" data-k="total" type="number" step="0.01" value="${p.total || ''}" style="width:100px;text-align:right"></td><td><input class="edit pe2" data-k="vendor" value="${esc(p.vendor)}" style="width:110px"></td><td><input class="edit num pe2" data-k="lot" value="${esc(p.lot || '')}" style="width:110px"></td><td><input class="edit pe2" data-k="coa" value="${esc(p.coa || '')}" style="width:120px" placeholder="URL/ref">${p.coa && /^https?:\/\//.test(p.coa) ? ` <a href="${esc(p.coa)}" target="_blank" rel="noopener">↗</a>` : ''}</td><td><input class="edit pe2" data-k="notes" value="${esc(p.notes)}" style="width:160px"></td>
       <td>${pendingPurchDelete === p.id ? `<span class="confirm"><button class="btn sm danger pdel-yes">Delete</button><button class="btn sm pdel-no">Keep</button></span>` : `<button class="btn sm pdel" aria-label="Delete">🗑</button>`}</td></tr>`).join('') +
     `</tbody><tfoot><tr><td colspan="5">Total</td><td class="r num">${fmt(rows.reduce((a, p) => a + (+p.total || 0), 0))}</td><td colspan="5"></td></tr></tfoot></table>`;
 }
+$('purchTable').addEventListener('change', async e => { if (!e.target.classList.contains('pe2')) return; const tr = e.target.closest('tr[data-id]'); const pu = S.purchases.find(x => x.id === tr.dataset.id); if (!pu) return; const np = Object.assign({}, pu); tr.querySelectorAll('.pe2').forEach(inp => { const k = inp.dataset.k; np[k] = ['qty', 'unitCost', 'total'].includes(k) ? (+inp.value || 0) : inp.value.trim(); }); if (await write('purchases', pu.id, np)) toast('Purchase updated'); });
 $('purchTable').addEventListener('click', async e => { const tr = e.target.closest('tr[data-id]'); if (!tr) return; const id = tr.dataset.id;
   if (e.target.classList.contains('pdel')) { pendingPurchDelete = id; renderPurchases(); } else if (e.target.classList.contains('pdel-no')) { pendingPurchDelete = null; renderPurchases(); } else if (e.target.classList.contains('pdel-yes')) { pendingPurchDelete = null; await remove('purchases', id); toast('Deleted'); } });
 
@@ -698,7 +708,7 @@ let settingsDirty = false;
 function renderSettings() {
   const st = settings();
   if (!settingsDirty) {
-    $('sSquare').value = ((+st.squareFeePct || 0) * 100).toFixed(1); $('sPack').value = st.packagingFallback; $('sDeduct').value = st.deductSquareFromCommission ? 'yes' : 'no'; $('sBasis').value = st.revenueBasis || 'paid'; $('sPortal').value = st.clinicPortal === false ? 'off' : 'on'; $('portalLink').textContent = location.origin + '/order'; $('sPayments').value = (st.paymentMethods || []).join(', ');
+    $('sSquare').value = ((+st.squareFeePct || 0) * 100).toFixed(1); $('sPack').value = st.packagingFallback; $('sDeduct').value = st.deductSquareFromCommission ? 'yes' : 'no'; $('sBasis').value = st.revenueBasis || 'paid'; $('sPortal').value = st.clinicPortal === false ? 'off' : 'on'; $('portalLink').textContent = location.origin + '/order'; const co = company(); $('cName').value = co.name; $('cAddr').value = co.addr; $('cEmail').value = co.email; $('cPhone').value = co.phone; $('cFooter').value = co.footer; $('cRuo').value = co.ruo; $('brandName').textContent = co.name + ' Order Desk'; $('sPayments').value = (st.paymentMethods || []).join(', ');
     $('repsEdit').innerHTML = `<table><thead><tr><th>Rep</th><th class="r">Base rate %</th><th class="r">Bonus threshold ($/mo)</th><th class="r">Bonus rate %</th><th></th></tr></thead><tbody>` + st.reps.map((r, i) => `<tr><td><input class="edit rep-n" data-i="${i}" value="${esc(r.name)}"></td><td><input class="edit rep-r num" data-i="${i}" type="number" step="0.5" value="${((+r.rate || 0) * 100).toFixed(1)}" style="width:80px"></td><td><input class="edit rep-t num" data-i="${i}" type="number" step="1000" value="${r.bonusThreshold ?? ''}" placeholder="none" style="width:110px"></td><td><input class="edit rep-b num" data-i="${i}" type="number" step="0.5" value="${r.bonusRate != null ? (r.bonusRate * 100).toFixed(1) : ''}" style="width:80px"></td><td><button class="btn sm rep-del" data-i="${i}">×</button></td></tr>`).join('') + `<tr><td colspan="5"><button class="btn sm" id="repAdd">+ Add rep</button></td></tr></tbody></table>`;
     $('shipEdit').innerHTML = `<table><thead><tr><th>Shipping type</th><th class="r">Charge to client</th><th class="r">Our est. cost</th><th></th></tr></thead><tbody>` + st.shipping.map((s, i) => `<tr><td><input class="edit sh-n" data-i="${i}" value="${esc(s.name)}"></td><td><input class="edit sh-c num" data-i="${i}" type="number" step="0.01" value="${s.charge}" style="width:100px"></td><td><input class="edit sh-k num" data-i="${i}" type="number" step="0.01" value="${s.cost}" style="width:100px"></td><td><button class="btn sm sh-del" data-i="${i}">×</button></td></tr>`).join('') + `<tr><td colspan="4"><button class="btn sm" id="shAdd">+ Add shipping type</button></td></tr></tbody></table>`;
   }
@@ -710,13 +720,13 @@ function renderSettings() {
     cls.map(c => `<tr data-id="${c.id}"><td><input class="edit ce" data-k="name" value="${esc(c.name)}" style="min-width:200px"></td><td><input class="edit ce" data-k="state" value="${esc(c.state)}" style="width:60px"></td><td><input class="edit ce" data-k="contact" value="${esc(c.contact)}"></td><td><input class="edit ce" data-k="email" value="${esc(c.email)}"></td><td><input class="edit ce" data-k="phone" value="${esc(c.phone)}" style="width:130px"></td><td><select class="edit ce" data-k="defaultShipping"><option value="">—</option>${st.shipping.map(s => `<option${s.name === c.defaultShipping ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}</select></td><td><select class="edit ce" data-k="defaultRep"><option value="">—</option>${st.reps.map(r => `<option${r.name === c.defaultRep ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select></td><td><input class="edit ce" data-k="notes" value="${esc(c.notes)}"></td><td><button class="btn sm ce-del" aria-label="Remove client">×</button></td></tr>`).join('') + `</tbody></table>` : `<div class="empty">No clients yet.</div>`;
   $('clientList').innerHTML = cls.map(c => `<option value="${esc(c.name)}">`).join('');
 }
-['sSquare','sPack','sDeduct','sBasis','sPortal','sPayments'].forEach(id => $(id).addEventListener('input', () => settingsDirty = true));
+['sSquare','sPack','sDeduct','sBasis','sPortal','sPayments','cName','cAddr','cEmail','cPhone','cFooter','cRuo'].forEach(id => $(id).addEventListener('input', () => settingsDirty = true));
 $('repsEdit').addEventListener('input', () => settingsDirty = true); $('shipEdit').addEventListener('input', () => settingsDirty = true);
 function readSettingsForm() {
   const st = settings();
   const reps = [...$('repsEdit').querySelectorAll('tr[data-i], tbody tr')].filter(tr => tr.querySelector('.rep-n')).map(tr => ({ name: tr.querySelector('.rep-n').value.trim(), rate: (+tr.querySelector('.rep-r').value || 0) / 100, bonusThreshold: +tr.querySelector('.rep-t').value || null, bonusRate: tr.querySelector('.rep-b').value === '' ? null : (+tr.querySelector('.rep-b').value) / 100 })).filter(r => r.name);
   const shipping = [...$('shipEdit').querySelectorAll('tbody tr')].filter(tr => tr.querySelector('.sh-n')).map(tr => ({ name: tr.querySelector('.sh-n').value.trim(), charge: +tr.querySelector('.sh-c').value || 0, cost: +tr.querySelector('.sh-k').value || 0 })).filter(s => s.name);
-  return Object.assign({}, st, { squareFeePct: (+$('sSquare').value || 0) / 100, packagingFallback: +$('sPack').value || 0, deductSquareFromCommission: $('sDeduct').value === 'yes', revenueBasis: $('sBasis').value, clinicPortal: $('sPortal').value !== 'off', paymentMethods: $('sPayments').value.split(',').map(s => s.trim()).filter(Boolean), reps, shipping });
+  return Object.assign({}, st, { squareFeePct: (+$('sSquare').value || 0) / 100, packagingFallback: +$('sPack').value || 0, deductSquareFromCommission: $('sDeduct').value === 'yes', revenueBasis: $('sBasis').value, clinicPortal: $('sPortal').value !== 'off', company: { name: $('cName').value.trim() || 'Zemo', addr: $('cAddr').value.trim(), email: $('cEmail').value.trim(), phone: $('cPhone').value.trim(), footer: $('cFooter').value.trim(), ruo: $('cRuo').value.trim() }, paymentMethods: $('sPayments').value.split(',').map(s => s.trim()).filter(Boolean), reps, shipping });
 }
 $('saveSettings').onclick = async () => { const st = readSettingsForm(); if (await write('settings', 'main', st)) { settingsDirty = false; toast('Settings saved'); } };
 document.addEventListener('click', e => {
@@ -749,7 +759,7 @@ function openInvoices() {
   const ps = purchaseStats();
   return S.orders.filter(o => !o.paid).map(o => { const c = calcOrder(o, ps); const days = Math.max(0, Math.round((Date.now() - new Date(o.date + 'T00:00:00')) / 864e5)); const cl = S.clients.find(x => x.name === o.client) || {}; return { o, c, days, cl }; }).sort((a, b) => b.days - a.days);
 }
-function reminderText(r) { const who = r.cl.contact ? r.cl.contact.split(' ')[0] : r.o.client; return `Hi ${who}, quick reminder from Zemo Labs: order ${r.o.num} from ${r.o.date} (${fmt(r.c.total)}) is still open. Let us know if you need the invoice resent or want to pay by Zelle/ACH. Thank you!`; }
+function reminderText(r) { const who = r.cl.contact ? r.cl.contact.split(' ')[0] : r.o.client; return `Hi ${who}, quick reminder from Zemo: order ${r.o.num} from ${r.o.date} (${fmt(r.c.total)}) is still open. Let us know if you need the invoice resent or want to pay by Zelle/ACH. Thank you!`; }
 function copyText(t, btn) { const done = () => { const old = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => btn.textContent = old, 1500); }; try { navigator.clipboard.writeText(t).then(done, () => { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) {} ta.remove(); done(); }); } catch (e) { toast('Copy not available'); } }
 function renderReceivables() {
   const st = settings(); if (document.activeElement !== $('chaseDays')) $('chaseDays').value = st.chaseDays;
@@ -792,7 +802,7 @@ function renderClose() {
   $('closeBanner').innerHTML = locked ? `<div class="banner">Locked on ${esc((locked.closedAt || '').slice(0, 10))}. Figures below are the frozen snapshot; later edits to orders or prices do not change them.</div>` : '';
   $('lockMonth').textContent = locked ? 'Unlock month' : 'Lock month';
   const t = d.pnl; const st = settings();
-  let html = `<div class="card sec"><h2>${monthLabel(d.month)} — Zemo Labs close report</h2><div class="grid two" style="margin-top:12px"><div class="tbl"><table><tbody>` +
+  let html = `<div class="card sec"><h2>${monthLabel(d.month)} — Zemo close report</h2><div class="grid two" style="margin-top:12px"><div class="tbl"><table><tbody>` +
     pnlRows(t).map(([k, v]) => `<tr><td${k.startsWith('  ') ? ' style="padding-left:24px;color:var(--muted)"' : ''}>${k === 'NET PROFIT' ? '<b>' + k + '</b>' : esc(k)}</td><td class="r num">${k === 'NET PROFIT' ? '<b>' + fmt(v) + '</b>' : fmt(v)}</td></tr>`).join('') + `</tbody></table></div>` +
     `<div class="grid kpis">${kpi('Net margin', pct(t.margin))}${kpi('Orders', t.orders)}${kpi('Avg order', fmt(t.aov))}${kpi('Cash spent on purchases', fmt(d.purchases))}${kpi('Inventory value (month end)', fmt(d.invTotal))}${kpi('Receivables open (month end)', fmt(d.recvTotal), d.recvTotal ? 'bad' : 'good')}</div></div></div>`;
   // rep statements
@@ -824,21 +834,21 @@ $('closeReport').addEventListener('click', e => { if (e.target.classList.contain
 const csvq = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 const toCsv = rows => rows.map(r => r.map(csvq).join(',')).join('\n');
 async function download(filename, data) { if (!S.downloads) return toast('Download not available in this view'); try { await S.downloads.save({ filename, data }); } catch (e) { toast('Download cancelled'); } }
-function repStatementRows(month, n, d) { const r = d.reps[n]; const os = d.repOrders[n] || []; const rows = [[`Zemo Labs — commission statement — ${n} — ${monthLabel(month)}`], [], ['Order #', 'Ordered', 'Paid', 'Client', 'Order total', 'Square fee', 'Commission base', 'Rate', 'Commission', 'Client paid']];
+function repStatementRows(month, n, d) { const r = d.reps[n]; const os = d.repOrders[n] || []; const rows = [[`Zemo — commission statement — ${n} — ${monthLabel(month)}`], [], ['Order #', 'Ordered', 'Paid', 'Client', 'Order total', 'Square fee', 'Commission base', 'Rate', 'Commission', 'Client paid']];
   for (const x of os) rows.push([x.num, x.date, x.datePaid || '', x.client, x.total.toFixed(2), x.square.toFixed(2), (x.total - (settings().deductSquareFromCommission ? x.square : 0)).toFixed(2), (r.rate * 100).toFixed(1) + '%', x.commission.toFixed(2), x.paid ? 'Yes' : 'No']);
   rows.push([], ['Orders', r.n], ['Sales', r.sales.toFixed(2)], ['Square fees', r.sq.toFixed(2)], ['Base commission', r.base.toFixed(2)]);
   if (r.threshold) rows.push([`Tier bonus (${(r.bonusRate * 100).toFixed(1)}% at $${r.threshold})`, r.bonus.toFixed(2), r.bonusHit ? 'reached' : 'not reached']);
   rows.push(['TOTAL COMMISSION DUE', r.total.toFixed(2)]); return rows; }
 function exportRepStatement(month, n) { const locked = S.closes.find(c => c.id === month); const d = locked ? locked.snapshot : closeData(month); if (!d.reps[n]) return toast('No sales for ' + n); download(`zemo-statement-${slug(n)}-${month}.csv`, toCsv(repStatementRows(month, n, d))); }
 $('exportClose').onclick = () => { const locked = S.closes.find(c => c.id === S.closeMonth); const d = locked ? locked.snapshot : closeData(S.closeMonth); const t = d.pnl;
-  const rows = [[`Zemo Labs — month close — ${monthLabel(d.month)}${locked ? ' (locked ' + (locked.closedAt || '').slice(0, 10) + ')' : ''}`], [], ['P&L'], ...pnlRows(t).map(([k, v]) => [k.trim(), v.toFixed(2)]), ['Net margin', t.margin == null ? '' : (t.margin * 100).toFixed(1) + '%'], ['Orders', t.orders], ['Avg order', t.aov == null ? '' : t.aov.toFixed(2)], ['Cash spent on purchases', d.purchases.toFixed(2)], []];
+  const rows = [[`Zemo — month close — ${monthLabel(d.month)}${locked ? ' (locked ' + (locked.closedAt || '').slice(0, 10) + ')' : ''}`], [], ['P&L'], ...pnlRows(t).map(([k, v]) => [k.trim(), v.toFixed(2)]), ['Net margin', t.margin == null ? '' : (t.margin * 100).toFixed(1) + '%'], ['Orders', t.orders], ['Avg order', t.aov == null ? '' : t.aov.toFixed(2)], ['Cash spent on purchases', d.purchases.toFixed(2)], []];
   for (const n of Object.keys(d.reps)) rows.push(...repStatementRows(d.month, n, d), []);
   rows.push(['INVENTORY VALUATION AT ' + monthEnd(d.month)], ['Product', 'Units on hand', 'Unit cost', 'Value']); for (const r of d.inv) rows.push([r.product, r.closing, r.unitCost.toFixed(2), r.value.toFixed(2)]); rows.push(['TOTAL', '', '', d.invTotal.toFixed(2)], []);
   rows.push(['RECEIVABLES OPEN AT MONTH END'], ['Order #', 'Date', 'Client', 'Amount']); for (const r of d.recv) rows.push([r.num, r.date, r.client, r.total.toFixed(2)]); rows.push(['TOTAL', '', '', d.recvTotal.toFixed(2)]);
   download(`zemo-close-${d.month}.csv`, toCsv(rows)); };
 
 // ---------- weekly payouts ----------
-function weekStatementRows(mon, n, r) { const rows = [[`Zemo Labs — weekly commission statement — ${n} — week of ${mon} (pay date ${payDay(mon)})`], [], ['Order #', 'Ordered', 'Client paid on', 'Client', 'Order total', 'Card fee', 'Rate', 'Commission']];
+function weekStatementRows(mon, n, r) { const rows = [[`Zemo — weekly commission statement — ${n} — week of ${mon} (pay date ${payDay(mon)})`], [], ['Order #', 'Ordered', 'Client paid on', 'Client', 'Order total', 'Card fee', 'Rate', 'Commission']];
   for (const x of r.orders) rows.push([x.num, x.date, x.datePaid, x.client, x.total.toFixed(2), x.square.toFixed(2), (r.rate * 100).toFixed(1) + '%', x.commission.toFixed(2)]);
   rows.push([], ['Orders paid this week', r.orders.length], ['Sales', r.sales.toFixed(2)], ['Base commission', r.base.toFixed(2)]); if (r.bonus) rows.push([`Monthly tier bonus (${monthLabel(r.bonusMonth)})`, r.bonus.toFixed(2)]); rows.push(['TOTAL DUE', r.total.toFixed(2)]); return rows; }
 function renderPayouts() {
@@ -886,12 +896,13 @@ function renderRepWeek(n) { const weeks = weeksAvailable(); if (!S.repViewWeek |
     <div class="tbl" style="margin-top:10px"><table><thead><tr><th>Order #</th><th>Client paid</th><th>Client</th><th class="r">Sale</th><th class="r">Your commission</th></tr></thead><tbody>` + r.orders.map(x => `<tr><td class="num">${esc(x.num)}</td><td class="num">${esc(x.datePaid)}</td><td>${esc(x.client)}</td><td class="r num">${fmt(x.total)}</td><td class="r num">${fmt(x.commission)}</td></tr>`).join('') + `</tbody></table></div>`; }
 $('repviewWeek').onchange = e => { S.repViewWeek = e.target.value; renderRepView(); };
 $('repviewExport').onclick = () => { const st = settings(); const repCfg = st.reps.find(r => slug(r.name) === S.repView); if (!repCfg) return; const n = repCfg.name; const d = closeData(S.repViewMonth); const r = d.reps[n]; if (!r) return toast('No sales this month');
-  const rows = [[`Zemo Labs — commission statement — ${n} — ${monthLabel(S.repViewMonth)}`], [], ['Order #', 'Ordered', 'Client paid', 'Client', 'Sale', 'Commission']]; for (const x of (d.repOrders[n] || [])) rows.push([x.num, x.date, x.datePaid || '', x.client, x.total.toFixed(2), x.commission.toFixed(2)]);
+  const rows = [[`Zemo — commission statement — ${n} — ${monthLabel(S.repViewMonth)}`], [], ['Order #', 'Ordered', 'Client paid', 'Client', 'Sale', 'Commission']]; for (const x of (d.repOrders[n] || [])) rows.push([x.num, x.date, x.datePaid || '', x.client, x.total.toFixed(2), x.commission.toFixed(2)]);
   rows.push([], ['Sales', r.sales.toFixed(2)], ['Rate', (r.rate * 100).toFixed(1) + '%'], ['Commission', r.base.toFixed(2)]); if (r.threshold) rows.push(['Tier bonus', r.bonus.toFixed(2)]); rows.push(['TOTAL COMMISSION', r.total.toFixed(2)]);
   download(`zemo-statement-${slug(n)}-${S.repViewMonth}.csv`, toCsv(rows)); };
 
 // ---------- packing slip / invoice ----------
-const ZEMO = { name: 'Zemo Labs', addr: '8606 Hunters Village Rd #218, Tampa, FL 33647', email: 'jeff@metromedsrx.com', phone: '813-382-8747' };
+const CO_DEFAULT = { name: 'Zemo', addr: '8606 Hunters Village Rd #218, Tampa, FL 33647', email: 'jeff@metromedsrx.com', phone: '813-382-8747', ruo: 'FOR RESEARCH USE ONLY. These products are not drugs, cosmetics or dietary supplements and are not intended for human or veterinary use, diagnosis, treatment, cure or prevention of any disease. Purchaser confirms it is a licensed clinic, laboratory or research facility and assumes all responsibility for proper handling and use. Store lyophilized vials at 2–8 °C.', footer: 'Thank you for your business.' };
+const company = () => Object.assign({}, CO_DEFAULT, settings().company || {});
 function openSlip(id) { S.slipOrderId = id; document.body.classList.add('slipmode'); renderSlip(); window.scrollTo({ top: 0 }); }
 function closeSlip() { document.body.classList.remove('slipmode'); S.slipOrderId = null; }
 $('slipBack').onclick = closeSlip; $('openSlipBtn').onclick = () => { if (S.editingId) openSlip(S.editingId); };
@@ -904,15 +915,15 @@ function renderSlip() {
   $('slipMode').textContent = inv ? 'Show as packing slip' : 'Show as invoice';
   const dateFmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
   $('slipBody').innerHTML = `<div class="slip">
-    <div class="brand"><div><h1>${esc(ZEMO.name)}</h1><div class="note" style="color:#5b6b7a">${esc(ZEMO.addr)}<br>${esc(ZEMO.email)} · ${esc(ZEMO.phone)}</div></div>
+    <div class="brand"><div><h1>${esc(company().name)}</h1><div class="note" style="color:#5b6b7a">${esc(company().addr)}<br>${esc(company().email)} · ${esc(company().phone)}</div></div>
       <div style="text-align:right"><div class="k">${inv ? 'Invoice' : 'Packing slip'}</div><div style="font-family:var(--mono);font-size:1.3rem;font-weight:700">${esc(o.num)}</div><div class="note" style="color:#5b6b7a">${esc(dateFmt(o.date))}</div>${inv ? `<div style="margin-top:6px"><span class="badge" style="background:${o.paid ? '#dcf1e2;color:#1f7a3d' : '#fbead0;color:#9a5b00'}">${o.paid ? 'PAID ' + esc(dateFmt(o.datePaid)) : 'DUE ON RECEIPT'}</span></div>` : ''}</div></div>
     <div class="meta"><div><div class="k">${inv ? 'Bill to' : 'Ship to'}</div><div><b>${esc(o.client)}</b></div>${cl.contact ? `<div>${esc(cl.contact)}</div>` : ''}${o.provider ? `<div>${esc(o.provider)}</div>` : ''}${cl.email ? `<div>${esc(cl.email)}</div>` : ''}${cl.phone ? `<div>${esc(cl.phone)}</div>` : ''}</div>
       <div><div class="k">Shipping</div><div>${esc(o.shippingType || '')}</div>${o.tracking ? `<div class="k" style="margin-top:6px">Tracking</div><div style="font-family:var(--mono)">${esc(o.tracking)}</div>` : ''}${inv && o.payment ? `<div class="k" style="margin-top:6px">Payment</div><div>${esc(o.payment)}</div>` : ''}${o.rep ? `<div class="k" style="margin-top:6px">Account rep</div><div>${esc(o.rep)}</div>` : ''}</div></div>
     <table><thead><tr><th style="width:52%">Item</th><th class="r">Qty</th>${inv ? '<th class="r">Unit price</th><th class="r">Amount</th>' : '<th>Packed</th>'}</tr></thead><tbody>` +
     c.lines.map(l => `<tr><td>${esc(l.product)}<div class="note" style="color:#5b6b7a;font-size:.75rem">Research use only${l.lot ? ' · Lot ' + esc(l.lot) : ''}</div></td><td class="r">${l.qty}</td>${inv ? `<td class="r">${fmt(l.unitPriceUsed)}${l.promo ? `<div class="note" style="color:#5b6b7a;font-size:.72rem">${l.promo}% off</div>` : ''}</td><td class="r">${fmt(l.total)}</td>` : '<td>☐</td>'}</tr>`).join('') + `</tbody></table>` +
     (inv ? `<div class="totals"><div><span>Products</span><span class="r">${fmt(c.productSales)}</span></div>${c.discount ? `<div><span>Discount</span><span class="r">−${fmt(c.discount)}</span></div>` : ''}<div><span>Shipping</span><span class="r">${fmt(c.shipCharge)}</span></div>${c.square ? `<div><span>Card processing (${pct(st.squareFeePct)})</span><span class="r">${fmt(c.square)}</span></div>` : ''}<div class="big"><span>Total</span><span class="r">${fmt(c.total)}</span></div>${!o.paid ? `<div class="note" style="margin-top:8px;color:#5b6b7a">Pay by Zelle or ACH to avoid the card processing fee — contact us for details.</div>` : ''}</div>` : `<div class="totals"><div><span>Total units</span><span class="r">${c.lines.reduce((a, l) => a + (+l.qty || 0), 0)}</span></div><div><span>Packed by</span><span>____________</span></div><div><span>Checked by</span><span>____________</span></div></div>`) +
-    `<div class="ruo">FOR RESEARCH USE ONLY. These products are not drugs, cosmetics or dietary supplements and are not intended for human or veterinary use, diagnosis, treatment, cure or prevention of any disease. Purchaser confirms it is a licensed clinic, laboratory or research facility and assumes all responsibility for proper handling and use. Store lyophilized vials at 2–8 °C.</div>
-    ${o.notes ? `<div class="foot"><b>Notes:</b> ${esc(o.notes)}</div>` : ''}<div class="foot">Thank you for your business. Questions: ${esc(ZEMO.email)} · ${esc(ZEMO.phone)}</div></div>`;
+    `<div class="ruo">${esc(company().ruo)}</div>
+    ${o.notes ? `<div class="foot"><b>Notes:</b> ${esc(o.notes)}</div>` : ''}<div class="foot">${esc(company().footer)} Questions: ${esc(company().email)} · ${esc(company().phone)}</div></div>`;
 }
 
 // ---------- order requests ----------

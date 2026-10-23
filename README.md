@@ -1,4 +1,4 @@
-# Zemo Labs Order Desk — your own website
+# Zemo Order Desk — your own website
 
 A single Node.js app: `server.js` (logins, roles, data API) + `index.html` (the Order Desk you've been using).
 Data lives in `data.json` on a persistent disk, with daily backups in `backups/`. No database to run, no npm packages.
