@@ -43,7 +43,7 @@ const form = s => Object.fromEntries(new URLSearchParams(s));
 const secure = req => (req.headers['x-forwarded-proto'] || '').includes('https');
 const cookie = (req, v, maxAge) => `zemo_session=${v}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure(req) ? '; Secure' : ''}`;
 
-const PAGE = (title, inner) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)} · Zemo Order Desk</title>
+const PAGE = (title, inner) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)} · Zemo Order Desk</title><link rel="icon" href="/favicon.png">
 <style>body{font:15px/1.5 system-ui,sans-serif;background:#f3f5f7;color:#15202b;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:16px}
 .card{background:#fff;border:1px solid #d3dae1;border-radius:12px;padding:28px;width:100%;max-width:420px}h1{font-size:1.2rem;margin:0 0 4px}.sub{color:#5b6b7a;font-size:.9rem;margin-bottom:18px}
 label{display:block;font-size:.8rem;color:#5b6b7a;font-weight:600;margin:12px 0 4px}input,select{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #d3dae1;border-radius:8px;font:inherit}
@@ -51,7 +51,7 @@ button{margin-top:18px;width:100%;padding:10px;border:0;border-radius:8px;backgr
 table{border-collapse:collapse;width:100%;font-size:.9rem;margin-top:12px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #d3dae1}a{color:#0f6b6e}.row{display:flex;gap:8px}.row button{margin:0}.wide{max-width:760px}
 @media(prefers-color-scheme:dark){body{background:#0f1519;color:#e6ecf0}.card{background:#171f26;border-color:#2b3842}input,select{background:#121a20;color:#e6ecf0;border-color:#2b3842}th,td{border-color:#2b3842}.sub,label{color:#93a3b1}}</style></head><body>${inner}</body></html>`;
 
-const orderPage = () => { const co = Object.assign({ name: 'Zemo' }, (db.settings[0] || {}).company || {}); return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Order · Zemo</title>
+const orderPage = () => { const co = Object.assign({ name: 'Zemo' }, (db.settings[0] || {}).company || {}); return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Order · Zemo</title><link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>:root{--bg:#f3f5f7;--surface:#fff;--line:#d3dae1;--fg:#15202b;--muted:#5b6b7a;--accent:#0f6b6e;--accent-fg:#fff;--soft:#d9eeee;--bad:#b3261e;--bad-soft:#f9dedb;--good:#1f7a3d;--good-soft:#dcf1e2}
 @media(prefers-color-scheme:dark){:root{--bg:#0f1519;--surface:#171f26;--line:#2b3842;--fg:#e6ecf0;--muted:#93a3b1;--accent:#4fb3b4;--accent-fg:#06282a;--soft:#143a3b;--bad:#f08a82;--bad-soft:#3e1a17;--good:#5fcf82;--good-soft:#15331f}}
@@ -66,7 +66,7 @@ label{display:block;font-size:.78rem;color:var(--muted);font-weight:600;margin:1
 button{padding:11px 16px;border:0;border-radius:9px;background:var(--accent);color:var(--accent-fg);font-weight:700;font-size:1rem;cursor:pointer;width:100%;margin-top:12px}button:disabled{opacity:.5}
 .note{font-size:.8rem;color:var(--muted)}.err{background:var(--bad-soft);color:var(--bad);padding:8px 10px;border-radius:8px;margin-top:10px;font-size:.9rem}.ok{background:var(--good-soft);color:var(--good);padding:14px;border-radius:10px;font-weight:600}
 .two{display:grid;gap:10px;grid-template-columns:1fr 1fr}@media(max-width:480px){.two{grid-template-columns:1fr}}</style></head><body><div class="wrap">
-<div class="top"><h1>${esc(co.name)}</h1><span class="sub">Wholesale order request</span></div>
+<div class="top"><img src="/logo.png" alt="${esc(co.name)}" style="height:84px;width:auto"><span class="sub" style="font-size:1.05rem">Wholesale order request</span></div>
 <div class="ruo">${esc(co.ruo || 'All products are sold for research use only (RUO). Not for human or veterinary use.')} By submitting, you confirm you are ordering on behalf of a licensed clinic or research facility.</div>
 <form id="f" class="grid" novalidate>
  <div>
@@ -96,7 +96,7 @@ $('f').onsubmit=async e=>{e.preventDefault();const fd=new FormData($('f'));const
  if(r.ok){document.querySelector('.grid').innerHTML='<div class="card ok" style="grid-column:1/-1">Thank you — your request <b>#'+esc(j.ref)+'</b> is in. '+esc(cat.company||'Zemo')+' will confirm, invoice, and ship. Questions: reply to your confirmation email.</div>';}else{$('go').disabled=false;$('msg').innerHTML='<div class="err">'+esc(j.error||'Something went wrong. Please try again.')+'</div>';}};
 })();
 </script></body></html>`; };
-const loginPage = (err, next) => PAGE('Sign in', `<form class="card" method="post" action="/login"><h1>Zemo Order Desk</h1><div class="sub">Sign in to continue</div>
+const loginPage = (err, next) => PAGE('Sign in', `<form class="card" method="post" action="/login"><img src="/logo.png" alt="Zemo" style="width:170px;display:block;margin:0 auto 14px"><h1 style="text-align:center">Order Desk</h1><div class="sub">Sign in to continue</div>
 <label>Username</label><input name="username" autocomplete="username" required autofocus><label>Password</label><input name="password" type="password" autocomplete="current-password" required>
 <input type="hidden" name="next" value="${esc(next || '/')}">${err ? `<div class="err">${esc(err)}</div>` : ''}<button>Sign in</button></form>`);
 const setupPage = err => PAGE('Set up', `<form class="card" method="post" action="/setup"><h1>Welcome — create the owner account</h1><div class="sub">This runs once. The owner can change prices, settings and manage users.</div>
@@ -138,6 +138,7 @@ http.createServer(async (req, res) => {
   if (p === '/login') { if (req.method === 'POST') { if (tooMany(ip)) return html(res, 429, loginPage('Too many attempts. Try again in 15 minutes.')); const f = form(await body(req)); const u = users.find(x => x.username === (f.username || '').trim().toLowerCase()); if (!u || !verify(f.password || '', u.hash)) { failed(ip); return html(res, 401, loginPage('Wrong username or password.', f.next)); } return redirect(res, (f.next || '/').startsWith('/') ? f.next || '/' : '/', { 'Set-Cookie': cookie(req, makeToken(u), SESSION_DAYS * 86400) }); } return html(res, 200, loginPage('', url.searchParams.get('next'))); }
   if (p === '/logout') return redirect(res, '/login', { 'Set-Cookie': cookie(req, '', 0) });
   if (p === '/healthz') return json(res, 200, { ok: true });
+  if (['/logo.png', '/logo-mark.png', '/favicon.png'].includes(p)) { const f = path.join(__dirname, p.slice(1)); if (!fs.existsSync(f)) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' }); return fs.createReadStream(f).pipe(res); }
   // ---- Public clinic ordering page (no login). Shows product names + Tier 1 list price only; saves to `requests` for owner/staff approval. ----
   const portalOn = !(db.settings[0] && db.settings[0].clinicPortal === false);
   if (p === '/order' || p === '/order/') { if (!portalOn) return html(res, 404, PAGE('Unavailable', '<div class="card"><h1>Online ordering is paused</h1><div class="sub">Please contact Zemo directly.</div></div>')); return html(res, 200, orderPage()); }

@@ -121,7 +121,7 @@ body.slipmode .top, body.slipmode .panel{display:none!important} body.slipmode #
 </style>
 
 <header class="top"><div class="top-in">
-  <div class="brand"><h1 id="brandName">Zemo Order Desk</h1><span class="sub">Sales · Inventory · Commission</span></div>
+  <div class="brand" style="align-items:center"><img src="/logo-mark.png" alt="" id="brandMark" style="height:34px;width:auto;display:none"><h1 id="brandName">Zemo Order Desk</h1><span class="sub">Sales · Inventory · Commission</span></div>
   <nav class="tabs" role="tablist" id="tabs">
     <button class="tab" role="tab" data-tab="dash" aria-selected="true">Dashboard</button>
     <button class="tab" role="tab" data-tab="new">New Order</button>
@@ -346,7 +346,7 @@ body.slipmode .top, body.slipmode .panel{display:none!important} body.slipmode #
 (() => {
 'use strict';
 // ---------- state ----------
-const S = { settings: null, products: [], clients: [], orders: [], purchases: [], priceHistory: [], payouts: [], closes: [], requests: [], slipOrderId: null, slipKind: 'invoice', closeMonth: null, payWeek: null, repViewWeek: null, repView: null, repViewMonth: null, db: null, canWrite: null, downloads: null, editingId: null, dashMonth: null, ordersMonth: 'all' };
+const S = { hasLogo: false, settings: null, products: [], clients: [], orders: [], purchases: [], priceHistory: [], payouts: [], closes: [], requests: [], slipOrderId: null, slipKind: 'invoice', closeMonth: null, payWeek: null, repViewWeek: null, repView: null, repViewMonth: null, db: null, canWrite: null, downloads: null, editingId: null, dashMonth: null, ordersMonth: 'all' };
 const DEFAULTS = { squareFeePct: 0.05, deductSquareFromCommission: true, packagingFallback: 3, chaseDays: 14, revenueBasis: 'paid', shipping: [], reps: [], paymentMethods: ['Zelle','ACH','Square','Cash/Other'] };
 const $ = id => document.getElementById(id);
 const fmt = n => (n == null || isNaN(n)) ? '—' : n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
@@ -915,7 +915,7 @@ function renderSlip() {
   $('slipMode').textContent = inv ? 'Show as packing slip' : 'Show as invoice';
   const dateFmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
   $('slipBody').innerHTML = `<div class="slip">
-    <div class="brand"><div><h1>${esc(company().name)}</h1><div class="note" style="color:#5b6b7a">${esc(company().addr)}<br>${esc(company().email)} · ${esc(company().phone)}</div></div>
+    <div class="brand"><div>${S.hasLogo ? `<img src="/logo.png" alt="${esc(company().name)}" style="height:92px;width:auto;display:block;margin-bottom:6px">` : `<h1>${esc(company().name)}</h1>`}<div class="note" style="color:#5b6b7a">${esc(company().addr)}<br>${esc(company().email)} · ${esc(company().phone)}</div></div>
       <div style="text-align:right"><div class="k">${inv ? 'Invoice' : 'Packing slip'}</div><div style="font-family:var(--mono);font-size:1.3rem;font-weight:700">${esc(o.num)}</div><div class="note" style="color:#5b6b7a">${esc(dateFmt(o.date))}</div>${inv ? `<div style="margin-top:6px"><span class="badge" style="background:${o.paid ? '#dcf1e2;color:#1f7a3d' : '#fbead0;color:#9a5b00'}">${o.paid ? 'PAID ' + esc(dateFmt(o.datePaid)) : 'DUE ON RECEIPT'}</span></div>` : ''}</div></div>
     <div class="meta"><div><div class="k">${inv ? 'Bill to' : 'Ship to'}</div><div><b>${esc(o.client)}</b></div>${cl.contact ? `<div>${esc(cl.contact)}</div>` : ''}${o.provider ? `<div>${esc(o.provider)}</div>` : ''}${cl.email ? `<div>${esc(cl.email)}</div>` : ''}${cl.phone ? `<div>${esc(cl.phone)}</div>` : ''}</div>
       <div><div class="k">Shipping</div><div>${esc(o.shippingType || '')}</div>${o.tracking ? `<div class="k" style="margin-top:6px">Tracking</div><div style="font-family:var(--mono)">${esc(o.tracking)}</div>` : ''}${inv && o.payment ? `<div class="k" style="margin-top:6px">Payment</div><div>${esc(o.payment)}</div>` : ''}${o.rep ? `<div class="k" style="margin-top:6px">Account rep</div><div>${esc(o.rep)}</div>` : ''}</div></div>
@@ -988,7 +988,7 @@ async function boot() {
   if (claude && claude.use) { const r = await Promise.all([claude.use('db'), claude.use('user'), claude.use('downloads')]); db = r[0]; user = r[1]; S.downloads = r[2]; if (!db) { $('statusText').textContent = 'Sign in to load shared data'; return; } }
   else { try { const r = await fetch('/api/me'); if (r.status === 401) { location.href = '/login'; return; } if (!r.ok) throw 0; meLocal = await r.json(); db = localAdapter(); S.downloads = localDownloads; } catch (e) { $('statusText').textContent = 'Offline demo: nothing is saved'; return; } }
   S.db = db; $('dot').classList.add('on'); $('statusText').textContent = claude ? 'Live · shared' : (meLocal ? meLocal.name + ' (' + meLocal.role + ')' : 'Local server');
-  if (meLocal) { $('acct').hidden = false; $('acctUsers').hidden = meLocal.role !== 'owner';
+  if (meLocal) { $('acct').hidden = false; $('acctUsers').hidden = meLocal.role !== 'owner'; const bm = $('brandMark'); bm.onload = () => { S.hasLogo = true; bm.style.display = 'block'; renderSlip(); }; bm.onerror = () => { bm.style.display = 'none'; }; bm.src = '/logo-mark.png?' + Date.now();
     if (meLocal.role === 'rep') { S.repView = slug(meLocal.rep); document.body.classList.add('repmode'); }
     if (meLocal.role === 'staff') { S.canWrite = true; document.querySelectorAll('#panel-settings .card').forEach((c, i) => { if (i < 3) c.classList.add('ro'); }); const n = document.createElement('p'); n.className = 'note'; n.textContent = 'Pricing, fees, shipping rates and commission are owner-only. You can add clients and enter orders.'; document.getElementById('panel-settings').prepend(n); document.querySelectorAll('#lockMonth').forEach(b => b.disabled = true); } }
   if (user) { try { S.canWrite = await user.can('data.write'); if (S.canWrite === false) setReadOnly(); const admin = await user.canEdit(); if (admin === false) { document.querySelectorAll('#panel-settings .card').forEach((c, i) => { if (i < 3) c.classList.add('ro'); }); const n = document.createElement('p'); n.className = 'note'; n.textContent = 'Pricing, fees, shipping rates and commission are locked to the owner. You can still add clients and enter orders.'; document.getElementById('panel-settings').prepend(n); } } catch (e) {} }
